@@ -1,11 +1,12 @@
-import mongoose from "mongoose";
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import { connectDB } from "./config/db.js";
 
-export const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB conectado");
-  } catch (error) {
-    console.error("❌ Error de conexión:", error);
-    process.exit(1);
-  }
-};
+
+dotenv.config();
+connectDB();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
