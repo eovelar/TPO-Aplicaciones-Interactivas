@@ -5,7 +5,6 @@ Trabajo Práctico Integrador - Gestión de Tareas Colaborativas.
 
 Proyecto desarrollado en **Node.js + Express** con **PostgreSQL** y **Sequelize**, que implementa un sistema de gestión de usuarios y tareas con autenticación basada en **JWT**.
 
----
 
 ## 🚀 Tecnologías utilizadas
 - **Node.js** (v22)  
@@ -16,14 +15,9 @@ Proyecto desarrollado en **Node.js + Express** con **PostgreSQL** y **Sequelize*
 - **jsonwebtoken** para autenticación vía tokens  
 - **dotenv** para variables de entorno  
 
----
 
 ## Instalar dependencias:
 - npm install 
-
----
-
----
 
 ## ✅ Estado actual
 
