@@ -4,21 +4,23 @@ import cors from "cors";
 import { connectDB, sequelize } from "./config/db.js";
 import authRoutes from "./routes/auth.routes.js";
 
-app.use("/api/auth", authRoutes);
-
-
-console.log("🔑 Password cargada:", process.env.DB_PASSWORD);
-
 dotenv.config();
 
 const app = express();
+
+// ✅ Middlewares globales
 app.use(cors());
 app.use(express.json());
+
+// ✅ Rutas
+app.use("/api/auth", authRoutes);
 
 // Ruta simple de prueba
 app.get("/", (req, res) => {
   res.send("Servidor funcionando 🚀");
 });
+
+console.log("🔑 Password cargada:", process.env.DB_PASSWORD);
 
 // Levantar server + conectar DB
 const PORT = process.env.PORT || 4000;
