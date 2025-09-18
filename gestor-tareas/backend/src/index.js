@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import authRoutes from "./routes/auth.routes.js";
+import { connectDB, sequelize } from "./config/db.js";
 import taskRoutes from "./routes/tasks.routes.js";
 
 dotenv.config();
@@ -11,8 +11,17 @@ app.use(cors());
 app.use(express.json());
 
 // Rutas
-app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
+// Inicializar DB y servidor
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+const startServer = async () => {
+  try {
+    await connectDB();
+    await sequelize.sync({ alter: true }); // crea/actualiza tablas automáticamente
+    app.listen(PORT, () => console.log(`✅ Server en puerto ${PORT}`));
+  } catch (error) {
+    console.error("❌ Error al iniciar:", error);
+  }
+};
+startServer();
