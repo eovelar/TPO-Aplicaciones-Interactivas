@@ -2,26 +2,31 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB, sequelize } from "./config/db.js";
-import taskRoutes from "./routes/tasks.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+
+app.use("/api/auth", authRoutes);
+
+
+console.log("🔑 Password cargada:", process.env.DB_PASSWORD);
 
 dotenv.config();
-const app = express();
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-app.use("/api/tasks", taskRoutes);
+// Ruta simple de prueba
+app.get("/", (req, res) => {
+  res.send("Servidor funcionando 🚀");
+});
 
-// Inicializar DB y servidor
+// Levantar server + conectar DB
 const PORT = process.env.PORT || 4000;
+
 const startServer = async () => {
-  try {
-    await connectDB();
-    await sequelize.sync({ alter: true }); // crea/actualiza tablas automáticamente
-    app.listen(PORT, () => console.log(`✅ Server en puerto ${PORT}`));
-  } catch (error) {
-    console.error("❌ Error al iniciar:", error);
-  }
+  await connectDB();
+  await sequelize.sync({ alter: true });
+  app.listen(PORT, () => console.log(`✅ Server en puerto ${PORT}`));
 };
+
 startServer();

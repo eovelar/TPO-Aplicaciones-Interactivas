@@ -1,16 +1,6 @@
-import express from "express";
 import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
-import cors from "cors";
-import { connectDB } from "./config/db.js";
-
-
 dotenv.config();
-connectDB();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
 
 export const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -18,6 +8,7 @@ export const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
     dialect: "postgres",
     logging: false,
   }
