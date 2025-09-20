@@ -1,22 +1,43 @@
-import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  BeforeInsert,
+  OneToMany,
+  ManyToMany,
+} from "typeorm";
 import * as bcrypt from "bcrypt";
+import { Task } from "./Task";
+import { Team } from "./Team";
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({ default: "miembro" })
-  role: string;
+  role!: string;
+
+  // Un usuario puede tener muchas tareas
+  @OneToMany(() => Task, (task) => task.user)
+  tasks!: Task[];
+
+  // Un usuario puede ser propietario de varios equipos
+  @OneToMany(() => Team, (team) => team.owner)
+  ownedTeams!: Team[];
+
+  // Un usuario puede ser miembro de varios equipos
+  @ManyToMany(() => Team, (team) => team.members)
+  teams!: Team[];
 
   @BeforeInsert()
   async hashPassword() {

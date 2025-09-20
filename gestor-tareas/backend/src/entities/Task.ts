@@ -1,23 +1,29 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { User } from "./User";
+import { Team } from "./Team";
 
 @Entity()
 export class Task {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  title: string;
+  title!: string;
 
   @Column({ nullable: true })
-  description: string;
+  description!: string;
 
   @Column({ default: "pendiente" })
-  status: string;
+  status!: string;
 
   @Column({ default: "media" })
-  priority: string;
+  priority!: string;
 
-  @ManyToOne(() => User, (user) => user.id, { onDelete: "CASCADE" })
-  user: User;
+  // Relación: muchas tareas pertenecen a un usuario
+  @ManyToOne(() => User, (user) => user.tasks, { onDelete: "CASCADE" })
+  user!: User;
+
+  // Relación: muchas tareas pertenecen a un equipo
+  @ManyToOne(() => Team, (team) => team.tasks, { onDelete: "CASCADE" })
+  team!: Team;
 }

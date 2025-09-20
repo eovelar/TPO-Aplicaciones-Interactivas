@@ -1,18 +1,19 @@
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Task } from "../entities/Task";
 
 const taskRepo = AppDataSource.getRepository(Task);
 
 // listar tareas - si es propietario ve todas, si es miembro solo las suyas
-export const getTasks = async (req, res) => {
+export const getTasks = async (req: Request, res: Response) => {
   try {
     let tasks;
 
-    if (req.user.role === "propietario") {
+    if (req.user?.role === "propietario") {
       tasks = await taskRepo.find({ relations: ["user"] });
     } else {
       tasks = await taskRepo.find({
-        where: { user: { id: req.user.id } },
+        where: { user: { id: req.user?.id } },
         relations: ["user"],
       });
     }
@@ -24,11 +25,11 @@ export const getTasks = async (req, res) => {
 };
 
 // Crear tarea - se guarda con el userId del usuario logueado
-export const createTask = async (req, res) => {
+export const createTask = async (req: Request, res: Response) => {
   try {
     const task = taskRepo.create({
       ...req.body,
-      user: { id: req.user.id }, // relacionar con el usuario logueado
+      user: { id: req.user!.id }, // relacionar con el usuario logueado
     });
 
     await taskRepo.save(task);
@@ -39,7 +40,7 @@ export const createTask = async (req, res) => {
 };
 
 // actualizar tarea - miembro solo sus tareas, propietario cualquiera
-export const updateTask = async (req, res) => {
+export const updateTask = async (req: Request, res: Response) => {
   try {
     const task = await taskRepo.findOne({
       where: { id: Number(req.params.id) },
@@ -48,7 +49,7 @@ export const updateTask = async (req, res) => {
 
     if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
 
-    if (req.user.role !== "propietario" && task.user.id !== req.user.id) {
+    if (req.user?.role !== "propietario" && task.user.id !== req.user?.id) {
       return res.status(403).json({ message: "No autorizado" });
     }
 
@@ -62,7 +63,7 @@ export const updateTask = async (req, res) => {
 };
 
 // eliminar tarea - miembro solo sus tareas, propietario cualquiera
-export const deleteTask = async (req, res) => {
+export const deleteTask = async (req: Request, res: Response) => {
   try {
     const task = await taskRepo.findOne({
       where: { id: Number(req.params.id) },
@@ -71,7 +72,7 @@ export const deleteTask = async (req, res) => {
 
     if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
 
-    if (req.user.role !== "propietario" && task.user.id !== req.user.id) {
+    if (req.user?.role !== "propietario" && task.user.id !== req.user?.id) {
       return res.status(403).json({ message: "No autorizado" });
     }
 

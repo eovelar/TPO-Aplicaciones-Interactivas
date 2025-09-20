@@ -1,3 +1,4 @@
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import jwt from "jsonwebtoken";
@@ -5,7 +6,7 @@ import jwt from "jsonwebtoken";
 const userRepo = AppDataSource.getRepository(User);
 
 // Registro de usuario
-export const register = async (req, res) => {
+export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -26,7 +27,7 @@ export const register = async (req, res) => {
 };
 
 // Login de usuario
-export const login = async (req, res) => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -38,6 +39,11 @@ export const login = async (req, res) => {
     const valid = await user.checkPassword(password);
     if (!valid) {
       return res.status(401).json({ message: "Credenciales inválidas" });
+    }
+
+    // Asegurar que la secret existe
+    if (!process.env.JWT_SECRET) {
+      throw new Error("Falta definir JWT_SECRET en el archivo .env");
     }
 
     // Generar token JWT

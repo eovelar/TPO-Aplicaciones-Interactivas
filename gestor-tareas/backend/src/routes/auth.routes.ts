@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import { register, login } from "../controllers/auth.controller";
 import { authRequired } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
@@ -11,10 +11,10 @@ router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(loginSchema), login);
 
 // 👤 Ruta protegida → solo con token
-router.get("/profile", authRequired(), (req: Request, res: Response) => {
+router.get("/profile", authRequired(), (req, res: Response) => {
   res.json({
     message: "Perfil del usuario autenticado",
-    user: req.user, // 👈 viene del middleware (id + role)
+    user: req.user, // 👈 ahora sí funciona con la extensión de Express
   });
 });
 
