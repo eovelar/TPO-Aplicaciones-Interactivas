@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Task } from "../entities/Task";
+import { prettyJson } from "../utils/response";
 
 const taskRepo = AppDataSource.getRepository(Task);
 
-// listar tareas - si es propietario ve todas, si es miembro solo las suyas
+// 📌 Listar tareas → propietario ve todas, miembro solo las suyas
 export const getTasks = async (req: Request, res: Response) => {
   try {
     let tasks;
@@ -18,13 +19,13 @@ export const getTasks = async (req: Request, res: Response) => {
       });
     }
 
-    res.json(tasks);
+    prettyJson(res, tasks);
   } catch (error) {
-    res.status(500).json({ message: "Error al obtener tareas", error });
+    prettyJson(res, { message: "Error al obtener tareas", error: (error as Error).message }, 500);
   }
 };
 
-// Crear tarea - se guarda con el userId del usuario logueado
+// 📌 Crear tarea → se guarda con el userId del usuario logueado
 export const createTask = async (req: Request, res: Response) => {
   try {
     const task = taskRepo.create({
@@ -33,13 +34,13 @@ export const createTask = async (req: Request, res: Response) => {
     });
 
     await taskRepo.save(task);
-    res.status(201).json(task);
+    prettyJson(res, task, 201);
   } catch (error) {
-    res.status(400).json({ message: "Error al crear la tarea", error });
+    prettyJson(res, { message: "Error al crear la tarea", error: (error as Error).message }, 400);
   }
 };
 
-// actualizar tarea - miembro solo sus tareas, propietario cualquiera
+// 📌 Actualizar tarea → miembro solo sus tareas, propietario cualquiera
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const task = await taskRepo.findOne({
@@ -47,22 +48,22 @@ export const updateTask = async (req: Request, res: Response) => {
       relations: ["user"],
     });
 
-    if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
+    if (!task) return prettyJson(res, { message: "Tarea no encontrada" }, 404);
 
     if (req.user?.role !== "propietario" && task.user.id !== req.user?.id) {
-      return res.status(403).json({ message: "No autorizado" });
+      return prettyJson(res, { message: "No autorizado" }, 403);
     }
 
     taskRepo.merge(task, req.body);
     await taskRepo.save(task);
 
-    res.json(task);
+    prettyJson(res, task);
   } catch (error) {
-    res.status(400).json({ message: "Error al actualizar la tarea", error });
+    prettyJson(res, { message: "Error al actualizar la tarea", error: (error as Error).message }, 400);
   }
 };
 
-// eliminar tarea - miembro solo sus tareas, propietario cualquiera
+// 📌 Eliminar tarea → miembro solo sus tareas, propietario cualquiera
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const task = await taskRepo.findOne({
@@ -70,15 +71,15 @@ export const deleteTask = async (req: Request, res: Response) => {
       relations: ["user"],
     });
 
-    if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
+    if (!task) return prettyJson(res, { message: "Tarea no encontrada" }, 404);
 
     if (req.user?.role !== "propietario" && task.user.id !== req.user?.id) {
-      return res.status(403).json({ message: "No autorizado" });
+      return prettyJson(res, { message: "No autorizado" }, 403);
     }
 
     await taskRepo.remove(task);
-    res.json({ message: "Tarea eliminada" });
+    prettyJson(res, { message: "Tarea eliminada" });
   } catch (error) {
-    res.status(500).json({ message: "Error al eliminar la tarea", error });
+    prettyJson(res, { message: "Error al eliminar la tarea", error: (error as Error).message }, 500);
   }
 };

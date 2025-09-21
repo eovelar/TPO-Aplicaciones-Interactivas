@@ -8,6 +8,7 @@ import { AppDataSource } from "./config/data-source";
 import authRoutes from "./routes/auth.routes";
 import taskRoutes from "./routes/tasks.routes";
 import teamRoutes from "./routes/team.routes";
+import userRoutes from "./routes/user.routes";
 
 // Middlewares
 import { errorHandler } from "./middleware/error.middleware";
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/teams", teamRoutes);
+app.use("/api/users", userRoutes);
 
 // 🚦 Ruta simple de prueba
 app.get("/", (_req: Request, res: Response) => {

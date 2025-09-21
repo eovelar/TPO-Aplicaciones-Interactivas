@@ -58,3 +58,24 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error en login", error });
   }
 };
+
+// Eliminar usuario → solo propietario
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    if (req.user?.role !== "propietario") {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    const { id } = req.params;
+
+    const user = await userRepo.findOne({ where: { id: Number(id) } });
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    await userRepo.remove(user);
+    res.json({ message: "Usuario eliminado correctamente" });
+  } catch (error) {
+    res.status(500).json({ message: "Error al eliminar usuario", error });
+  }
+};
