@@ -6,6 +6,7 @@ import { AppDataSource } from "./config/data-source";
 
 import authRoutes from "./routes/auth.routes";
 import taskRoutes from "./routes/tasks.routes";
+import teamRoutes from "./routes/teams.routes"; // 👈 nuevo
 import { errorHandler } from "./middleware/error.middleware";
 
 dotenv.config();
@@ -19,6 +20,7 @@ app.use(express.json());
 // Rutas principales
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/teams", teamRoutes); // 👈 nuevo
 
 // Ruta simple de prueba
 app.get("/", (_req: Request, res: Response) => {
