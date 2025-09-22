@@ -8,16 +8,20 @@ import { prettyJson } from "../utils/response";
 const taskRepo = AppDataSource.getRepository(Task);
 const userRepo = AppDataSource.getRepository(User);
 
+// Tipado local para evitar errores
+type AuthUser = { id: number; role: "propietario" | "miembro" };
+
 // 📌 Listar tareas → propietario ve todas, miembro solo las suyas
 export const getTasks = async (req: Request, res: Response) => {
   try {
-    let tasks: Task[];
+    const currentUser = (req as any).user as AuthUser | undefined;
 
-    if (req.user?.role === "propietario") {
+    let tasks: Task[];
+    if (currentUser?.role === "propietario") {
       tasks = await taskRepo.find({ relations: ["user"] });
     } else {
       tasks = await taskRepo.find({
-        where: { user: { id: req.user?.id } },
+        where: { user: { id: currentUser?.id } },
         relations: ["user"],
       });
     }
@@ -35,28 +39,38 @@ export const getTasks = async (req: Request, res: Response) => {
 // 📌 Crear tarea → propietario puede asignar, miembro solo a sí mismo
 export const createTask = async (req: Request, res: Response) => {
   try {
-    let assignedUserId = req.user!.id; // por defecto: usuario logueado
+    const currentUser = (req as any).user as AuthUser;
+    if (!currentUser) return prettyJson(res, { message: "No autenticado" }, 401);
 
-    if (req.user?.role === "propietario" && req.body.userId) {
-      assignedUserId = req.body.userId;
-      const user = (await userRepo.findOne({
-        where: { id: assignedUserId },
-      })) as User | null;
-      if (!user)
-        return prettyJson(res, { message: "Usuario asignado no existe" }, 404);
+    // por defecto: el usuario logueado
+    let assignedUserId = currentUser.id;
+
+    // si es propietario y manda userId, puede asignar a otro
+    if (currentUser.role === "propietario" && req.body.userId != null) {
+      assignedUserId = Number(req.body.userId);
     }
 
-    const task = taskRepo.create({
-      ...req.body,
-      user: { id: assignedUserId },
+    // ✅ Pre-cargar el usuario para evitar `as any` y ambigüedades
+    const assignee = await userRepo.findOne({ where: { id: assignedUserId } });
+    if (!assignee) {
+      return prettyJson(res, { message: "Usuario asignado no existe" }, 404);
+    }
+
+    // ✅ Usar save() directo evita la sobrecarga Task | Task[]
+    const saved = await taskRepo.save({
+      ...(req.body as Partial<Task>),
+      user: assignee,
     });
 
-    await taskRepo.save(task);
-
-    const savedTask = (await taskRepo.findOne({
-      where: { id: task.id },
+    // Recuperar con relaciones
+    const savedTask = await taskRepo.findOne({
+      where: { id: saved.id },
       relations: ["user"],
-    })) as Task | null;
+    });
+
+    if (!savedTask) {
+      return prettyJson(res, { message: "Error al recuperar la tarea creada" }, 500);
+    }
 
     prettyJson(res, savedTask, 201);
   } catch (error) {
@@ -71,21 +85,27 @@ export const createTask = async (req: Request, res: Response) => {
 // 📌 Actualizar tarea → miembro solo sus tareas, propietario cualquiera
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const task = (await taskRepo.findOne({
-      where: { id: Number(req.params.id) },
+    const currentUser = (req as any).user as AuthUser | undefined;
+    if (!currentUser) return prettyJson(res, { message: "No autenticado" }, 401);
+
+    const taskId = Number(req.params.id);
+    const task = await taskRepo.findOne({
+      where: { id: taskId },
       relations: ["user"],
-    })) as Task | null;
+    });
 
     if (!task) return prettyJson(res, { message: "Tarea no encontrada" }, 404);
 
-    if (req.user?.role !== "propietario" && task.user.id !== req.user?.id) {
+    // Verificar autorización
+    if (currentUser.role !== "propietario" && task.user.id !== currentUser.id) {
       return prettyJson(res, { message: "No autorizado" }, 403);
     }
 
+    // Actualizar la tarea
     taskRepo.merge(task, req.body);
-    await taskRepo.save(task);
+    const updatedTask = await taskRepo.save(task);
 
-    prettyJson(res, task);
+    prettyJson(res, updatedTask);
   } catch (error) {
     prettyJson(
       res,
@@ -98,14 +118,19 @@ export const updateTask = async (req: Request, res: Response) => {
 // 📌 Eliminar tarea → miembro solo sus tareas, propietario cualquiera
 export const deleteTask = async (req: Request, res: Response) => {
   try {
-    const task = (await taskRepo.findOne({
-      where: { id: Number(req.params.id) },
+    const currentUser = (req as any).user as AuthUser | undefined;
+    if (!currentUser) return prettyJson(res, { message: "No autenticado" }, 401);
+
+    const taskId = Number(req.params.id);
+    const task = await taskRepo.findOne({
+      where: { id: taskId },
       relations: ["user"],
-    })) as Task | null;
+    });
 
     if (!task) return prettyJson(res, { message: "Tarea no encontrada" }, 404);
 
-    if (req.user?.role !== "propietario" && task.user.id !== req.user?.id) {
+    // Verificar autorización
+    if (currentUser.role !== "propietario" && task.user.id !== currentUser.id) {
       return prettyJson(res, { message: "No autorizado" }, 403);
     }
 
