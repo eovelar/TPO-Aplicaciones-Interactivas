@@ -6,7 +6,7 @@ import { AppDataSource } from "./config/data-source";
 
 // Rutas
 import authRoutes from "./routes/auth.routes";
-import taskRoutes from "./routes/tasks.routes";
+import taskRoutes from "./routes/task.routes";
 import teamRoutes from "./routes/team.routes";
 import userRoutes from "./routes/user.routes";
 

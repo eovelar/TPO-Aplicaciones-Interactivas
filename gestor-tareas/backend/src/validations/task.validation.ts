@@ -14,7 +14,8 @@ export const taskSchema: ObjectSchema = Joi.object({
     .valid("pendiente", "en progreso", "completada", "cancelada")
     .default("pendiente")
     .messages({
-      "any.only": "El estado debe ser 'pendiente', 'en progreso', 'completada' o 'cancelada'",
+      "any.only":
+        "El estado debe ser 'pendiente', 'en progreso', 'completada' o 'cancelada'",
     }),
 
   priority: Joi.string()
@@ -27,5 +28,10 @@ export const taskSchema: ObjectSchema = Joi.object({
   deadline: Joi.date().greater("now").optional().messages({
     "date.base": "La fecha límite debe ser una fecha válida",
     "date.greater": "La fecha límite debe ser en el futuro",
+  }),
+
+  // 👉 opcional, solo se usará si lo envía un propietario
+  userId: Joi.number().optional().messages({
+    "number.base": "El ID del usuario asignado debe ser un número",
   }),
 });
