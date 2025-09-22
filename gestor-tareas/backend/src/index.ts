@@ -21,6 +21,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ Configuración global para formatear JSON con 2 espacios
+app.set("json spaces", 2);
+
 // 📌 Rutas principales
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
