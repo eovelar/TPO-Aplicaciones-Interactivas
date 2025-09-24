@@ -4,6 +4,10 @@
   "description": "Backend del TPO Aplicaciones Interactivas con Node.js, Express y PostgreSQL",
   "main": "src/index",
   "scripts": {
+    "typeorm": "typeorm-ts-node-commonjs -d src/data-source.ts",
+    "migration:run": "npm run typeorm -- migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "migration:show": "npm run typeorm -- migration:show",
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index",

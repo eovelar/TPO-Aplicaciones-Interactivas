@@ -1,3 +1,4 @@
+// src/index.ts
 import "reflect-metadata";
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
@@ -13,6 +14,13 @@ import userRoutes from "./routes/user.routes";
 // Middlewares
 import { errorHandler } from "./middleware/error.middleware";
 
+// 🔑 Auth + Contexto por request
+import { auth } from "./middleware/auth.middleware"; // ← usar `auth`
+import {
+  requestContextMiddleware,
+  setUserInContextMiddleware,
+} from "./middleware/request-context.middleware";
+
 dotenv.config();
 
 const app = express();
@@ -21,14 +29,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🧠 Contexto por request (DEBE ir antes de auth y rutas)
+app.use(requestContextMiddleware);
+
 // ✅ Configuración global para formatear JSON con 2 espacios
 app.set("json spaces", 2);
 
-// 📌 Rutas principales
+// 📌 Rutas públicas (sin auth)
 app.use("/api/auth", authRoutes);
-app.use("/api/tasks", taskRoutes);
-app.use("/api/teams", teamRoutes);
-app.use("/api/users", userRoutes);
+
+// 📌 Rutas protegidas (auth → setUserInContext → rutas)
+app.use("/api/tasks", auth, setUserInContextMiddleware, taskRoutes);
+app.use("/api/teams", auth, setUserInContextMiddleware, teamRoutes);
+app.use("/api/users", auth, setUserInContextMiddleware, userRoutes);
 
 // 🚦 Ruta simple de prueba
 app.get("/", (_req: Request, res: Response) => {
