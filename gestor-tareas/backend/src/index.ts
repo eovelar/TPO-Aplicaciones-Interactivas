@@ -10,12 +10,13 @@ import authRoutes from "./routes/auth.routes";
 import taskRoutes from "./routes/task.routes";
 import teamRoutes from "./routes/team.routes";
 import userRoutes from "./routes/user.routes";
+import historialRoutes from "./routes/historial.routes"; // ← NUEVO
 
 // Middlewares
 import { errorHandler } from "./middleware/error.middleware";
 
 // 🔑 Auth + Contexto por request
-import { auth } from "./middleware/auth.middleware"; // ← usar `auth`
+import { auth } from "./middleware/auth.middleware";
 import {
   requestContextMiddleware,
   setUserInContextMiddleware,
@@ -42,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tasks", auth, setUserInContextMiddleware, taskRoutes);
 app.use("/api/teams", auth, setUserInContextMiddleware, teamRoutes);
 app.use("/api/users", auth, setUserInContextMiddleware, userRoutes);
+app.use("/api/historial", auth, setUserInContextMiddleware, historialRoutes); // ← NUEVO
 
 // 🚦 Ruta simple de prueba
 app.get("/", (_req: Request, res: Response) => {
