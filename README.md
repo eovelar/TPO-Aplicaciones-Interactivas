@@ -255,6 +255,19 @@ curl -s -X GET "http://localhost:4000/api/tasks" \
 
 ### Comments
 
+**Comentar una tarea** 
+
+```bash
+ curl -s -X POST "http://localhost:400/api/comments" \
+> -H "Content-Type: application/json" \
+> -H "Autorizathion: Bearer TOKEN" \
+> -d '{
+> "contenido": "Este es un comentario de prueba",
+> "taskId": 1,
+> "userId": 2
+> }'
+```
+
 * `GET /api/comments`
 * `POST /api/comments`
 * `PUT /api/comments/:id`
