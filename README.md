@@ -165,6 +165,20 @@ URL_BASE=http://localhost:4000
 * `POST /api/auth/register`
 * `POST /api/auth/login`
 
+**Registrar un nuevo usuario** (ejemplo):
+
+```bash
+curl -s -X POST "http://localhost:4000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New User",
+    "email": "new.user@example.com",
+    "password": "123456",
+    "role": "miembro"
+  }'
+```
+
+
 **Login** (ejemplo):
 
 ```bash
@@ -181,6 +195,11 @@ TOKEN="eyJhbGciOi..."  # reemplazar por el devuelto
 
 ### Users
 
+```bash
+curl -s -X POST "http://localhost:4000/api/users" \
+  -H "Authorization: Bearer $TOKEN" \
+```
+
 * `GET /api/users` (según roles)
 * `GET /api/users/:id`
 * `POST /api/users`
@@ -188,6 +207,24 @@ TOKEN="eyJhbGciOi..."  # reemplazar por el devuelto
 * `DELETE /api/users/:id`
 
 ### Teams
+
+**Ver listado de grupos**
+
+```bash
+curl -s -X GET "http://localhost:4000/api/groups" \
+  -H "Authorization: Bearer $TOKEN"
+```
+**Crear grupo**
+
+```bash
+curl -s -X POST "http://localhost:4000/api/groups" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Backend Team",
+    "description": "All backend developers"
+  }'
+```
 
 * `GET /api/teams`
 * `POST /api/teams`
@@ -201,13 +238,19 @@ TOKEN="eyJhbGciOi..."  # reemplazar por el devuelto
 * `PUT /api/tasks/:id`
 * `DELETE /api/tasks/:id`
 
-**Crear task (ejemplo)**
+**Crear tarea (ejemplo)**
 
 ```bash
-curl -s -X POST "$URL_BASE/api/tasks" \
+curl -s -X POST "http://localhost:4000/api/tasks" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"titulo":"Primera tarea","descripcion":"Ejemplo","estado":"pendiente"}'
+```
+**Ver el listado de tareas**
+
+```bash
+curl -s -X GET "http://localhost:4000/api/tasks" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Comments
