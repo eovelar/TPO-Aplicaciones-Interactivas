@@ -80,6 +80,13 @@ npm start       # ejecuta: node dist/index.js
 
 ---
 
+> Si devuelve Error: listen EADDRINUSE: address already in use :::4000
+
+```powershell
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 4000).OwningProcess -Force
+```
+
+
 ## 🧩 Migraciones y Seeds (TypeORM)
 
 > Si el proyecto usa **TypeORM** con DataSource (por ej. `src/data-source.ts`), podés trabajar migraciones así (nombres y paths a modo de ejemplo):
