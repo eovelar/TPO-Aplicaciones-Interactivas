@@ -31,9 +31,6 @@ function computeDiff(before: any, after: any) {
 
 @EventSubscriber()
 export class AuditSubscriber implements EntitySubscriberInterface {
-  constructor(ds: DataSource) {
-    ds.subscribers.push(this);
-  }
 
   private beforeStates = new WeakMap<object, any>();
 
