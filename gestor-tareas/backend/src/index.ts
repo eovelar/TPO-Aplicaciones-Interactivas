@@ -4,6 +4,8 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { AppDataSource } from "./config/data-source";
+import swaggerUi from "swagger-ui-express";
+import { openapi } from "./swagger";
 
 // Rutas
 import authRoutes from "./routes/auth.routes";
@@ -12,6 +14,7 @@ import teamRoutes from "./routes/team.routes";
 import userRoutes from "./routes/user.routes";
 import historialRoutes from "./routes/historial.routes";
 import commentRoutes from "./routes/comment.routes";
+
 // Middlewares
 import { errorHandler } from "./middleware/error.middleware";
 
@@ -38,6 +41,10 @@ app.set("json spaces", 2);
 
 // 📌 Rutas públicas (sin auth)
 app.use("/api/auth", authRoutes);
+
+// Endpoint UI y JSON del OpenAPI 
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
+app.get("/api/openapi.json", (_req, res) => res.json(openapi));
 
 // 📌 Rutas protegidas (auth → setUserInContext → rutas)
 app.use("/api/tasks", auth, setUserInContextMiddleware, taskRoutes);
