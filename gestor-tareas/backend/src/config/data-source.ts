@@ -7,7 +7,8 @@ import dotenv from "dotenv";
 import { User } from "../entities/User";
 import { Task } from "../entities/Task";
 import { Team } from "../entities/Team";
-import { Historial } from "../entities/historial.entities"; // ← tu entidad de historial
+import { Historial } from "../entities/historial.entities";
+import { Comment } from "../entities/comment.entities";
 
 // Subscriber de auditoría
 import { AuditSubscriber } from "../subscribers/audit.subscriber";
@@ -30,10 +31,7 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   logging: false,
 
-  // Podés seguir listando clases (estático)…
-  entities: [User, Task, Team, Historial],
-  // …y además permitir globs si luego agregás entidades por archivo:
-  // entities: [path.join(__dirname, "entities/*.{ts,js}")],
+  entities: [User, Task, Team, Historial, Comment],
 
   // Migraciones (detecta tanto .ts en dev como .js en prod si compilás)
   migrations: ["src/migrations/*.{ts,js}"],
