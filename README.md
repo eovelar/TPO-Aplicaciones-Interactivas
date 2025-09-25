@@ -170,7 +170,7 @@ URL_BASE=http://localhost:4000
 ```bash
 curl -s -X POST "http://localhost:4000/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"email":"eva@example.com","password":"123456"}'
+  -d '{"email":"admin@test.com","password":"admin123"}'
 ```
 
 Guarda el token:
