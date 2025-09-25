@@ -196,7 +196,7 @@ TOKEN="eyJhbGciOi..."  # reemplazar por el devuelto
 ### Users
 
 ```bash
-curl -s -X POST "http://localhost:4000/api/users" \
+curl -s -X GET "http://localhost:4000/api/users" \
   -H "Authorization: Bearer $TOKEN" \
 ```
 
