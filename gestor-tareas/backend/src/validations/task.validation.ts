@@ -30,7 +30,6 @@ export const taskSchema: ObjectSchema = Joi.object({
     "date.greater": "La fecha límite debe ser en el futuro",
   }),
 
-  // 👉 opcional, solo se usará si lo envía un propietario
   userId: Joi.number().optional().messages({
     "number.base": "El ID del usuario asignado debe ser un número",
   }),

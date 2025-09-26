@@ -13,9 +13,9 @@ router.delete("/reset", hasRole(["propietario"]), async (req, res) => {
     await AppDataSource.manager.query(
       `TRUNCATE "task", "team", "user" RESTART IDENTITY CASCADE`
     );
-    return res.json({ message: "✅ Base de datos reseteada" });
+    return res.json({ message: "Base de datos reseteada" });
   } catch (error) {
-    console.error("❌ Error al resetear la BD:", error);
+    console.error("Error al resetear la BD:", error);
     return res.status(500).json({ message: "Error al resetear la base de datos" });
   }
 });

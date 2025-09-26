@@ -8,7 +8,7 @@ import { prettyJson } from "../utils/response";
 const teamRepo = AppDataSource.getRepository(Team);
 const userRepo = AppDataSource.getRepository(User);
 
-// 📌 Crear un equipo → solo propietario
+// Crear un equipo → solo propietario
 export const createTeam = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -40,7 +40,7 @@ export const createTeam = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Listar equipos → propietario ve todos, miembro solo los suyos
+// Listar equipos → propietario ve todos, miembro solo los suyos
 export const getTeams = async (req: Request, res: Response) => {
   try {
     let teams;
@@ -60,7 +60,7 @@ export const getTeams = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Actualizar equipo → solo propietario del equipo
+// Actualizar equipo → solo propietario del equipo
 export const updateTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -82,7 +82,7 @@ export const updateTeam = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Añadir miembro → solo propietario del equipo
+// Añadir miembro → solo propietario del equipo
 export const addMember = async (req: Request, res: Response) => {
   try {
     const { id } = req.params; // id del equipo
@@ -111,7 +111,7 @@ export const addMember = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Quitar miembro → solo propietario del equipo
+// Quitar miembro → solo propietario del equipo
 export const removeMember = async (req: Request, res: Response) => {
   try {
     const { id, userId } = req.params; // ambos desde la URL
@@ -136,7 +136,7 @@ export const removeMember = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Eliminar equipo → solo propietario
+// Eliminar equipo → solo propietario
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

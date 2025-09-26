@@ -46,29 +46,29 @@ app.use("/api/auth", authRoutes);
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
 app.get("/api/openapi.json", (_req, res) => res.json(openapi));
 
-// 📌 Rutas protegidas (auth → setUserInContext → rutas)
+// Rutas protegidas (auth → setUserInContext → rutas)
 app.use("/api/tasks", auth, setUserInContextMiddleware, taskRoutes);
 app.use("/api/teams", auth, setUserInContextMiddleware, teamRoutes);
 app.use("/api/users", auth, setUserInContextMiddleware, userRoutes);
 app.use("/api/historial", auth, setUserInContextMiddleware, historialRoutes);
 app.use("/api", auth, setUserInContextMiddleware, commentRoutes);
 
-// 🚦 Ruta simple de prueba
+// Ruta simple de prueba
 app.get("/", (_req: Request, res: Response) => {
   res.send("Servidor funcionando 🚀");
 });
 
-// 🛑 Middleware de errores (siempre al final)
+// Middleware de errores (siempre al final)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
 
-// 🔗 Inicializar conexión con TypeORM
+// Inicializar conexión con TypeORM
 AppDataSource.initialize()
   .then(() => {
-    console.log("✅ Conectado a PostgreSQL con TypeORM");
+    console.log("Conectado a PostgreSQL con TypeORM");
     app.listen(PORT, () => {
-      console.log(`🚀 Server escuchando en puerto ${PORT}`);
+      console.log(`Server escuchando en puerto ${PORT}`);
     });
   })
-  .catch((error) => console.log("❌ Error al conectar la BD:", error));
+  .catch((error) => console.log("Error al conectar la BD:", error));

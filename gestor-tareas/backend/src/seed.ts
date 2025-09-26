@@ -5,7 +5,7 @@ import { Team } from "./entities/Team";
 
 const seed = async () => {
   try {
-    console.log("🌱 Ejecutando seeds...");
+    console.log("Ejecutando seeds...");
 
     await AppDataSource.initialize();
 
@@ -60,8 +60,8 @@ const seed = async () => {
     // Crear equipos con owner + members
     const equipoA = AppDataSource.manager.create(Team, {
       name: "Equipo A",
-      owner: admin,             // 👈 propietario del equipo
-      members: [eva, juan],     // 👈 miembros del equipo
+      owner: admin,            
+      members: [eva, juan],    
     });
 
     const equipoB = AppDataSource.manager.create(Team, {
@@ -99,10 +99,10 @@ const seed = async () => {
 
     await AppDataSource.manager.save([task1, task2, task3]);
 
-    console.log("✅ Seeds ejecutados con éxito (usuarios + equipos + nuevas tareas)");
+    console.log("Seeds ejecutados con éxito (usuarios + equipos + nuevas tareas)");
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error al ejecutar seeds:", error);
+    console.error("Error al ejecutar seeds:", error);
     process.exit(1);
   }
 };

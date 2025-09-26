@@ -8,18 +8,18 @@ import { deleteUser } from "../controllers/auth.controller";
 
 const router = Router();
 
-// 🔑 Rutas públicas con validación
+// Rutas públicas con validación
 router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(loginSchema), login);
 
 // Eliminar usuario
 router.delete("/:id", authRequired(), deleteUser);
 
-// 👤 Ruta protegida → solo con token
+// Ruta protegida → solo con token
 router.get("/profile", authRequired(), (req, res: Response) => {
   res.json({
     message: "Perfil del usuario autenticado",
-    user: req.user, // 👈 ahora sí funciona con la extensión de Express
+    user: req.user, 
   });
 });
 

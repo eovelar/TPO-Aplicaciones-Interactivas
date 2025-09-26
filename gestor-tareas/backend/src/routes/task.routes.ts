@@ -7,17 +7,17 @@ import { hasRole } from "../middleware/role.middleware";
 
 const router = Router();
 
-// ✅ Listar tareas → cualquier usuario logueado
+// Listar tareas → cualquier usuario logueado
 router.get("/", authRequired(), getTasks);
 
-// ✅ Crear tarea → cualquier usuario logueado (validación incluida)
+// Crear tarea → cualquier usuario logueado (validación incluida)
 router.post("/", authRequired(), validate(taskSchema), createTask);
 
-// ✅ Actualizar tarea → cualquier usuario logueado (validación incluida)
-// 🔐 Chequeo extra de permisos está en el controller
+// Actualizar tarea → cualquier usuario logueado (validación incluida)
+// Chequeo extra de permisos está en el controller
 router.put("/:id", authRequired(), validate(taskSchema), updateTask);
 
-// ✅ Eliminar tarea → solo propietario
+// Eliminar tarea → solo propietario
 router.delete("/:id", authRequired(), hasRole(["propietario"]), deleteTask);
 
 export default router;

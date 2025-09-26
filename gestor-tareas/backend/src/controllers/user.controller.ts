@@ -5,7 +5,7 @@ import { prettyJson } from "../utils/response";
 
 const userRepo = AppDataSource.getRepository(User);
 
-// 📌 Listar todos los usuarios → solo propietario
+// Listar todos los usuarios → solo propietario
 export const getUsers = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -19,7 +19,7 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Obtener un usuario por id → solo propietario
+// Obtener un usuario por id → solo propietario
 export const getUserById = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -37,7 +37,7 @@ export const getUserById = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Eliminar un usuario → solo propietario
+// Eliminar un usuario → solo propietario
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -56,7 +56,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Actualizar datos de un usuario → solo propietario
+// Actualizar datos de un usuario → solo propietario
 export const updateUser = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {

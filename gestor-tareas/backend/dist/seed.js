@@ -6,7 +6,7 @@ const Task_1 = require("./entities/Task");
 const Team_1 = require("./entities/Team");
 const seed = async () => {
     try {
-        console.log("🌱 Ejecutando seeds...");
+        console.log("Ejecutando seeds...");
         await data_source_1.AppDataSource.initialize();
         // Limpiar tablas
         await data_source_1.AppDataSource.manager.query(`TRUNCATE "task", "team", "user" RESTART IDENTITY CASCADE`);
@@ -53,8 +53,8 @@ const seed = async () => {
         // Crear equipos con owner + members
         const equipoA = data_source_1.AppDataSource.manager.create(Team_1.Team, {
             name: "Equipo A",
-            owner: admin, // 👈 propietario del equipo
-            members: [eva, juan], // 👈 miembros del equipo
+            owner: admin, // propietario del equipo
+            members: [eva, juan], // miembros del equipo
         });
         const equipoB = data_source_1.AppDataSource.manager.create(Team_1.Team, {
             name: "Equipo B",
@@ -85,11 +85,11 @@ const seed = async () => {
             user: juan,
         });
         await data_source_1.AppDataSource.manager.save([task1, task2, task3]);
-        console.log("✅ Seeds ejecutados con éxito (usuarios + equipos + nuevas tareas)");
+        console.log("Seeds ejecutados con éxito (usuarios + equipos + nuevas tareas)");
         process.exit(0);
     }
     catch (error) {
-        console.error("❌ Error al ejecutar seeds:", error);
+        console.error("Error al ejecutar seeds:", error);
         process.exit(1);
     }
 };

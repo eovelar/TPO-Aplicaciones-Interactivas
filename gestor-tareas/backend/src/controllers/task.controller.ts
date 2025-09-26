@@ -11,7 +11,7 @@ const userRepo = AppDataSource.getRepository(User);
 // Tipado local para evitar errores
 type AuthUser = { id: number; role: "propietario" | "miembro" };
 
-// 📌 Listar tareas → propietario ve todas, miembro solo las suyas
+// Listar tareas → propietario ve todas, miembro solo las suyas
 export const getTasks = async (req: Request, res: Response) => {
   try {
     const currentUser = (req as any).user as AuthUser | undefined;
@@ -36,7 +36,7 @@ export const getTasks = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Crear tarea → propietario puede asignar, miembro solo a sí mismo
+// Crear tarea → propietario puede asignar, miembro solo a sí mismo
 export const createTask = async (req: Request, res: Response) => {
   try {
     const currentUser = (req as any).user as AuthUser;
@@ -50,19 +50,17 @@ export const createTask = async (req: Request, res: Response) => {
       assignedUserId = Number(req.body.userId);
     }
 
-    // ✅ Pre-cargar el usuario para evitar `as any` y ambigüedades
+    //Pre-cargar el usuario para evitar `as any` y ambigüedades
     const assignee = await userRepo.findOne({ where: { id: assignedUserId } });
     if (!assignee) {
       return prettyJson(res, { message: "Usuario asignado no existe" }, 404);
     }
 
-    // ✅ Usar save() directo evita la sobrecarga Task | Task[]
     const saved = await taskRepo.save({
       ...(req.body as Partial<Task>),
       user: assignee,
     });
 
-    // Recuperar con relaciones
     const savedTask = await taskRepo.findOne({
       where: { id: saved.id },
       relations: ["user"],
@@ -82,7 +80,7 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Actualizar tarea → miembro solo sus tareas, propietario cualquiera
+// Actualizar tarea → miembro solo sus tareas, propietario cualquiera
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const currentUser = (req as any).user as AuthUser | undefined;
@@ -115,7 +113,7 @@ export const updateTask = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Eliminar tarea → miembro solo sus tareas, propietario cualquiera
+// Eliminar tarea → miembro solo sus tareas, propietario cualquiera
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const currentUser = (req as any).user as AuthUser | undefined;

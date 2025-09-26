@@ -27,7 +27,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 
-  // ⚠️ Importante: desactivar synchronize y usar migraciones
+  // Importante: desactivar synchronize y usar migraciones
   synchronize: false,
   logging: false,
 
