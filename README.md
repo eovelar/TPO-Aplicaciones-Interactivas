@@ -47,11 +47,6 @@ cd <carpeta-del-repo>/gestor-tareas/backend
 # 2) Instalar dependencias
 npm install
 
-# 3) Crear .env
-cp .env.example .env  # si existe .env.example
-# o crea el .env manualmente con el contenido de arriba
-```
-
 ---
 
 ## ▶️ Modos de ejecución
