@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
-import jwt from "jsonwebtoken";
-
 const userRepo = AppDataSource.getRepository(User);
 
 // Registro de usuario
@@ -26,7 +24,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-// Login de usuario
+// Login de usuario 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -41,19 +39,17 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // Asegurar que la secret existe
-    if (!process.env.JWT_SECRET) {
-      throw new Error("Falta definir JWT_SECRET en el archivo .env");
-    }
-
-    // Generar token JWT
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    res.json({ message: "Login exitoso", token });
+    // En lugar de token, devolvemos directamente los datos del usuario
+    res.json({
+      message: "Login exitoso",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      info: "Usá estos datos en headers (x-user-id, x-user-role) para probar endpoints.",
+    });
   } catch (error) {
     res.status(500).json({ message: "Error en login", error });
   }

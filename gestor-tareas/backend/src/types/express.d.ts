@@ -6,7 +6,7 @@ declare global {
     interface UserPayload {
       id: number;
       role: "propietario" | "miembro";
-      email?: string; // ← opcional para no romper si no lo seteás
+      email?: string;
     }
     interface Request {
       user?: UserPayload;

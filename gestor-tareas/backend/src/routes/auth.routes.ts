@@ -1,10 +1,8 @@
 import { Router, Response } from "express";
-import { register, login } from "../controllers/auth.controller";
-import { authRequired } from "../middleware/auth.middleware";
+import { register, login, deleteUser } from "../controllers/auth.controller";
+import { simpleAuth, requireRole } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
 import { registerSchema, loginSchema } from "../validations/user.validation";
-import { deleteUser } from "../controllers/auth.controller";
-
 
 const router = Router();
 
@@ -12,14 +10,14 @@ const router = Router();
 router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(loginSchema), login);
 
-// Eliminar usuario
-router.delete("/:id", authRequired(), deleteUser);
+// Eliminar usuario → requiere autenticación y rol propietario
+router.delete("/:id", simpleAuth, requireRole(["propietario"]), deleteUser);
 
-// Ruta protegida → solo con token
-router.get("/profile", authRequired(), (req, res: Response) => {
+// Perfil del usuario autenticado
+router.get("/profile", simpleAuth, (req, res: Response) => {
   res.json({
     message: "Perfil del usuario autenticado",
-    user: req.user, 
+    user: req.user,
   });
 });
 

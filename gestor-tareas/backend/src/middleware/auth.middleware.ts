@@ -1,53 +1,44 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 
 type Role = "propietario" | "miembro";
 
-interface JwtUserPayload {
-  id: number;
-  role: Role;
-  email?: string;
-  iat?: number;
-  exp?: number;
-}
+export function simpleAuth(req: Request, res: Response, next: NextFunction) {
+  const idHeader = req.header("x-user-id");
+  const roleHeader = req.header("x-user-role");
+  const emailHeader = req.header("x-user-email");
 
-// Extrae "Bearer <token>"
-function extractToken(req: Request): string | null {
-  const h = (req.headers.authorization || (req.headers as any).Authorization) as string | undefined;
-  if (!h) return null;
-  const [scheme, token] = h.split(" ");
-  if (!token || scheme.toLowerCase() !== "bearer") return null;
-  return token;
-}
-
-/**
- * Middleware base: valida JWT y setea req.user
- */
-export function auth(req: Request, res: Response, next: NextFunction) {
-  const token = extractToken(req);
-  if (!token) return res.status(401).json({ message: "Token requerido" });
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtUserPayload;
-    // req.user viene de tu src/types/express.d.ts
-    req.user = { id: decoded.id, role: decoded.role, email: decoded.email };
-    return next();
-  } catch {
-    return res.status(401).json({ message: "Token inválido" });
-  }
-}
-
-/**
- * Factory con roles: primero corre `auth`, luego valida el rol (si se indicó)
- * Uso: router.get("/admin", authRequired(["propietario"]), handler);
- */
-export function authRequired(roles: Role[] = []) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    auth(req, res, () => {
-      if (roles.length && (!req.user || !roles.includes(req.user.role))) {
-        return res.status(403).json({ message: "No tienes permisos" });
-      }
-      return next();
+  if (!idHeader || !roleHeader) {
+    return res.status(401).json({
+      message: "Faltan encabezados de autenticación: x-user-id y x-user-role",
     });
+  }
+
+  const id = Number(idHeader);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ message: "x-user-id debe ser numérico" });
+  }
+
+  const role = roleHeader === "propietario" ? "propietario" : "miembro";
+
+  req.user = {
+    id,
+    role,
+    email: emailHeader ?? undefined,
+  };
+
+  next();
+}
+
+export function requireRole(roles: Role[] = []) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Usuario no autenticado" });
+    }
+
+    if (roles.length && !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "No tienes permisos" });
+    }
+
+    next();
   };
 }
