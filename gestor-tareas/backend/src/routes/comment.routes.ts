@@ -1,23 +1,27 @@
 import { Router } from "express";
-import { authRequired } from "../middleware/auth.middleware";
+import { simpleAuth } from "../middleware/auth.middleware";
 import { setUserInContextMiddleware } from "../middleware/request-context.middleware";
 import { validate } from "../middleware/validate.middleware";
 import { createCommentSchema } from "../schemas/comment.schema";
-import { listCommentsByTask, createComment, deleteComment } from "../controllers/comment.controller";
+import {
+  listCommentsByTask,
+  createComment,
+  deleteComment,
+} from "../controllers/comment.controller";
 
 const router = Router();
 
-// Listar comentarios de una tarea
+// Listar comentarios de una tarea → requiere autenticación
 router.get(
   "/tasks/:taskId/comments",
-  authRequired(),
+  simpleAuth,
   listCommentsByTask
 );
 
-// Crear comentario
+// Crear comentario → requiere autenticación y contexto de usuario
 router.post(
   "/tasks/:taskId/comments",
-  authRequired(),
+  simpleAuth,
   setUserInContextMiddleware, // para que el subscriber tenga userId
   validate(createCommentSchema),
   createComment
@@ -26,7 +30,7 @@ router.post(
 // Eliminar comentario (autor o propietario)
 router.delete(
   "/comments/:id",
-  authRequired(),
+  simpleAuth,
   setUserInContextMiddleware,
   deleteComment
 );

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authRequired } from "../middleware/auth.middleware";
+import { simpleAuth, requireRole } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
 import {
   teamSchema,
@@ -17,25 +17,25 @@ import {
 
 const router = Router();
 
-// Crear un equipo
-router.post("/", authRequired(), validate(teamSchema), createTeam);
+// Crear un equipo → cualquier usuario autenticado
+router.post("/", simpleAuth, validate(teamSchema), createTeam);
 
-// Listar equipos
-router.get("/", authRequired(), getTeams);
+// Listar equipos → cualquier usuario autenticado
+router.get("/", simpleAuth, getTeams);
 
-// Actualizar un equipo
-router.put("/:id", authRequired(), validate(teamSchema), updateTeam);
+// Actualizar un equipo → cualquier usuario autenticado
+router.put("/:id", simpleAuth, validate(teamSchema), updateTeam);
 
-// Eliminar un equipo
-router.delete("/:id", authRequired(), deleteTeam);
+// Eliminar un equipo → solo propietario
+router.delete("/:id", simpleAuth, requireRole(["propietario"]), deleteTeam);
 
-// Añadir miembro a un equipo
-router.post("/:id/members", authRequired(), validate(addMemberSchema), addMember);
+// Añadir miembro a un equipo → cualquier usuario autenticado
+router.post("/:id/members", simpleAuth, validate(addMemberSchema), addMember);
 
-// Quitar miembro de un equipo
+// Quitar miembro de un equipo → cualquier usuario autenticado
 router.delete(
   "/:id/members/:userId",
-  authRequired(),
+  simpleAuth,
   validate(removeMemberSchema),
   removeMember
 );

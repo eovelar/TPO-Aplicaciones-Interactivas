@@ -1,4 +1,3 @@
-// src/index.ts
 import "reflect-metadata";
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
@@ -18,8 +17,8 @@ import commentRoutes from "./routes/comment.routes";
 // Middlewares
 import { errorHandler } from "./middleware/error.middleware";
 
-// 🔑 Auth + Contexto por request
-import { auth } from "./middleware/auth.middleware";
+// Auth + Contexto por request
+import { simpleAuth } from "./middleware/auth.middleware";
 import {
   requestContextMiddleware,
   setUserInContextMiddleware,
@@ -29,29 +28,29 @@ dotenv.config();
 
 const app = express();
 
-// 🌍 Middlewares globales
+// Middlewares globales
 app.use(cors());
 app.use(express.json());
 
-// 🧠 Contexto por request (DEBE ir antes de auth y rutas)
+// Contexto por request (DEBE ir antes de auth y rutas)
 app.use(requestContextMiddleware);
 
-// ✅ Configuración global para formatear JSON con 2 espacios
+// Configuración global para formatear JSON con 2 espacios
 app.set("json spaces", 2);
 
-// 📌 Rutas públicas (sin auth)
+// Rutas públicas (sin auth)
 app.use("/api/auth", authRoutes);
 
-// Endpoint UI y JSON del OpenAPI 
+// Documentación Swagger
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
 app.get("/api/openapi.json", (_req, res) => res.json(openapi));
 
-// Rutas protegidas (auth → setUserInContext → rutas)
-app.use("/api/tasks", auth, setUserInContextMiddleware, taskRoutes);
-app.use("/api/teams", auth, setUserInContextMiddleware, teamRoutes);
-app.use("/api/users", auth, setUserInContextMiddleware, userRoutes);
-app.use("/api/historial", auth, setUserInContextMiddleware, historialRoutes);
-app.use("/api", auth, setUserInContextMiddleware, commentRoutes);
+// Rutas protegidas (simpleAuth → setUserInContext → rutas)
+app.use("/api/tasks", simpleAuth, setUserInContextMiddleware, taskRoutes);
+app.use("/api/teams", simpleAuth, setUserInContextMiddleware, teamRoutes);
+app.use("/api/users", simpleAuth, setUserInContextMiddleware, userRoutes);
+app.use("/api/historial", simpleAuth, setUserInContextMiddleware, historialRoutes);
+app.use("/api", simpleAuth, setUserInContextMiddleware, commentRoutes);
 
 // Ruta simple de prueba
 app.get("/", (_req: Request, res: Response) => {

@@ -1,6 +1,5 @@
-// src/routes/user.routes.ts
 import { Router } from "express";
-import { authRequired } from "../middleware/auth.middleware";
+import { simpleAuth, requireRole } from "../middleware/auth.middleware";
 import {
   getUsers,
   getUserById,
@@ -11,15 +10,15 @@ import {
 const router = Router();
 
 // Listar todos los usuarios → solo propietario
-router.get("/", authRequired(), getUsers);
+router.get("/", simpleAuth, requireRole(["propietario"]), getUsers);
 
 // Obtener un usuario por id → solo propietario
-router.get("/:id", authRequired(), getUserById);
+router.get("/:id", simpleAuth, requireRole(["propietario"]), getUserById);
 
 // Actualizar usuario → solo propietario
-router.put("/:id", authRequired(), updateUser);
+router.put("/:id", simpleAuth, requireRole(["propietario"]), updateUser);
 
 // Eliminar usuario → solo propietario
-router.delete("/:id", authRequired(), deleteUser);
+router.delete("/:id", simpleAuth, requireRole(["propietario"]), deleteUser);
 
 export default router;
