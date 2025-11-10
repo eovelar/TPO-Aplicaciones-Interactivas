@@ -1,144 +1,98 @@
-// src/controllers/task.controller.ts
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Task } from "../entities/Task";
-import { User } from "../entities/User";
-import { prettyJson } from "../utils/response";
 
-const taskRepo = AppDataSource.getRepository(Task);
-const userRepo = AppDataSource.getRepository(User);
+const taskRepository = AppDataSource.getRepository(Task);
 
-// Tipado local para evitar errores
-type AuthUser = { id: number; role: "propietario" | "miembro" };
-
-// Listar tareas → propietario ve todas, miembro solo las suyas
+// 📋 Obtener todas las tareas (si propietario: todas, si miembro: solo las suyas)
 export const getTasks = async (req: Request, res: Response) => {
   try {
-    const currentUser = (req as any).user as AuthUser | undefined;
+    const userId = Number(req.headers["x-user-id"]);
+    const userRole = String(req.headers["x-user-role"]);
 
-    let tasks: Task[];
-    if (currentUser?.role === "propietario") {
-      tasks = await taskRepo.find({ relations: ["user"] });
-    } else {
-      tasks = await taskRepo.find({
-        where: { user: { id: currentUser?.id } },
+    if (!userId || !userRole) {
+      return res.status(400).json({ message: "Faltan datos del usuario autenticado" });
+    }
+
+    let tasks;
+
+    // 👑 Propietario ve todas las tareas
+    if (userRole === "propietario") {
+      tasks = await taskRepository.find({
         relations: ["user"],
+        order: { id: "DESC" },
+      });
+    } else {
+      // 👤 Miembro solo las suyas
+      tasks = await taskRepository.find({
+        where: { user: { id: userId } },
+        order: { id: "DESC" },
       });
     }
 
-    prettyJson(res, tasks);
+    return res.json(tasks);
   } catch (error) {
-    prettyJson(
-      res,
-      { message: "Error al obtener tareas", error: (error as Error).message },
-      500
-    );
+    console.error("Error al obtener tareas:", error);
+    return res.status(500).json({ message: "Error interno al listar tareas" });
   }
 };
 
-// Crear tarea → propietario puede asignar, miembro solo a sí mismo
+// ➕ Crear una nueva tarea
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const currentUser = (req as any).user as AuthUser;
-    if (!currentUser) return prettyJson(res, { message: "No autenticado" }, 401);
+    const userId = Number(req.headers["x-user-id"]);
+    const { title, description, priority, status } = req.body;
 
-    // por defecto: el usuario logueado
-    let assignedUserId = currentUser.id;
+    if (!userId) return res.status(400).json({ message: "Falta el ID de usuario" });
+    if (!title) return res.status(400).json({ message: "El título es obligatorio" });
 
-    // si es propietario y manda userId, puede asignar a otro
-    if (currentUser.role === "propietario" && req.body.userId != null) {
-      assignedUserId = Number(req.body.userId);
-    }
-
-    //Pre-cargar el usuario para evitar `as any` y ambigüedades
-    const assignee = await userRepo.findOne({ where: { id: assignedUserId } });
-    if (!assignee) {
-      return prettyJson(res, { message: "Usuario asignado no existe" }, 404);
-    }
-
-    const saved = await taskRepo.save({
-      ...(req.body as Partial<Task>),
-      user: assignee,
+    const newTask = taskRepository.create({
+      title,
+      description,
+      priority,
+      status,
+      user: { id: userId } as any, // relación con el usuario
     });
 
-    const savedTask = await taskRepo.findOne({
-      where: { id: saved.id },
-      relations: ["user"],
-    });
-
-    if (!savedTask) {
-      return prettyJson(res, { message: "Error al recuperar la tarea creada" }, 500);
-    }
-
-    prettyJson(res, savedTask, 201);
+    await taskRepository.save(newTask);
+    return res.status(201).json(newTask);
   } catch (error) {
-    prettyJson(
-      res,
-      { message: "Error al crear la tarea", error: (error as Error).message },
-      400
-    );
+    console.error("Error al crear tarea:", error);
+    return res.status(500).json({ message: "Error interno al crear tarea" });
   }
 };
 
-// Actualizar tarea → miembro solo sus tareas, propietario cualquiera
+// 🔁 Actualizar tarea
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const currentUser = (req as any).user as AuthUser | undefined;
-    if (!currentUser) return prettyJson(res, { message: "No autenticado" }, 401);
+    const { id } = req.params;
+    const data = req.body;
 
-    const taskId = Number(req.params.id);
-    const task = await taskRepo.findOne({
-      where: { id: taskId },
-      relations: ["user"],
-    });
+    const task = await taskRepository.findOneBy({ id: Number(id) });
+    if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
 
-    if (!task) return prettyJson(res, { message: "Tarea no encontrada" }, 404);
+    Object.assign(task, data);
+    await taskRepository.save(task);
 
-    // Verificar autorización
-    if (currentUser.role !== "propietario" && task.user.id !== currentUser.id) {
-      return prettyJson(res, { message: "No autorizado" }, 403);
-    }
-
-    // Actualizar la tarea
-    taskRepo.merge(task, req.body);
-    const updatedTask = await taskRepo.save(task);
-
-    prettyJson(res, updatedTask);
+    return res.status(200).json(task);
   } catch (error) {
-    prettyJson(
-      res,
-      { message: "Error al actualizar la tarea", error: (error as Error).message },
-      400
-    );
+    console.error("Error al actualizar tarea:", error);
+    return res.status(500).json({ message: "Error interno al actualizar tarea" });
   }
 };
 
-// Eliminar tarea → miembro solo sus tareas, propietario cualquiera
+// 🗑️ Eliminar tarea
 export const deleteTask = async (req: Request, res: Response) => {
   try {
-    const currentUser = (req as any).user as AuthUser | undefined;
-    if (!currentUser) return prettyJson(res, { message: "No autenticado" }, 401);
+    const { id } = req.params;
+    const task = await taskRepository.findOneBy({ id: Number(id) });
 
-    const taskId = Number(req.params.id);
-    const task = await taskRepo.findOne({
-      where: { id: taskId },
-      relations: ["user"],
-    });
+    if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
 
-    if (!task) return prettyJson(res, { message: "Tarea no encontrada" }, 404);
-
-    // Verificar autorización
-    if (currentUser.role !== "propietario" && task.user.id !== currentUser.id) {
-      return prettyJson(res, { message: "No autorizado" }, 403);
-    }
-
-    await taskRepo.remove(task);
-    prettyJson(res, { message: "Tarea eliminada" });
+    await taskRepository.delete(id);
+    return res.status(200).json({ message: "Tarea eliminada correctamente ✅" });
   } catch (error) {
-    prettyJson(
-      res,
-      { message: "Error al eliminar la tarea", error: (error as Error).message },
-      500
-    );
+    console.error("Error al eliminar tarea:", error);
+    return res.status(500).json({ message: "Error interno al eliminar tarea" });
   }
 };

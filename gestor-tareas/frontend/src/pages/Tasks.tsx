@@ -1,263 +1,313 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/http";
 import { useUser } from "../context/UserContext";
-import { useNavigate } from "react-router-dom";
+import TaskEditModal from "../components/TaskEditModal";
+import TaskActionsMenu from "../components/TaskActionsMenu";
 
+// Unificamos el tipo Task para creación y edición
 interface Task {
-  id: number;
+  id?: number; // opcional → nuevas tareas no lo tienen
   title: string;
   description: string;
-  priority: string;
+  priority: "alta" | "media" | "baja";
   status: string;
 }
 
 export default function Tasks() {
-  const { user, setUser } = useUser();
+  const { user } = useUser();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("media");
-  const [status, setStatus] = useState("pendiente");
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // 🔽 Filtros
-  const [filterStatus, setFilterStatus] = useState("todas");
+  const [filterStatus, setFilterStatus] = useState("todos");
   const [filterPriority, setFilterPriority] = useState("todas");
-  const [sortBy, setSortBy] = useState("fecha");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [newTask, setNewTask] = useState<Task>({
+    title: "",
+    description: "",
+    priority: "media",
+    status: "pendiente",
+  });
 
-  const handleLogout = () => {
-    setUser(null);
-    navigate("/");
-  };
-
-  const fetchTasks = async () => {
-    if (!user) return;
-    try {
-      const res = await api.get("/tasks", {
-        headers: {
-          "x-user-id": user.id,
-          "x-user-role": user.role,
-          "x-user-email": user.email,
-        },
-      });
-      setTasks(res.data);
-    } catch (err) {
-      console.error("Error al cargar tareas:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Cargar tareas del servidor
   useEffect(() => {
+    if (!user) return;
+    const fetchTasks = async () => {
+      try {
+        const res = await api.get("/tasks", {
+          headers: {
+            "x-user-id": String(user.id),
+            "x-user-role": user.role,
+            "x-user-email": user.email,
+          },
+        });
+        setTasks(res.data);
+        setFilteredTasks(res.data);
+      } catch (err) {
+        console.error("Error al cargar tareas:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchTasks();
   }, [user]);
 
-  // Crear o actualizar
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+  // Estilos visuales
+  const getPriorityStyle = (priority: Task["priority"]) => {
+    switch (priority) {
+      case "alta":
+        return "bg-red-100 text-red-700 border border-red-300";
+      case "media":
+        return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      default:
+        return "bg-green-100 text-green-700 border border-green-300";
+    }
+  };
 
+  const getStatusStyle = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes("pendiente"))
+      return "bg-gray-200 text-gray-700 border border-gray-300";
+    if (s.includes("en progreso"))
+      return "bg-blue-100 text-blue-700 border border-blue-300";
+    if (s.includes("complet"))
+      return "bg-green-100 text-green-700 border border-green-300";
+    return "bg-gray-100 text-gray-600 border border-gray-200";
+  };
+
+  // Filtrado dinámico
+  useEffect(() => {
+    let filtered = [...tasks];
+    if (filterStatus !== "todos")
+      filtered = filtered.filter((t) =>
+        t.status.toLowerCase().includes(filterStatus)
+      );
+    if (filterPriority !== "todas")
+      filtered = filtered.filter((t) => t.priority === filterPriority);
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q)
+      );
+    }
+    setFilteredTasks(filtered);
+  }, [filterStatus, filterPriority, searchQuery, tasks]);
+
+  // Crear tarea
+  const handleCreateTask = async (taskData: Task) => {
+    if (!taskData.title.trim()) return alert("El título es obligatorio");
     try {
-      if (editingTask) {
-        const res = await api.put(
-          `/tasks/${editingTask.id}`,
-          { title, description, priority, status },
-          {
-            headers: {
-              "x-user-id": user.id,
-              "x-user-role": user.role,
-              "x-user-email": user.email,
-            },
-          }
-        );
-        setTasks(tasks.map((t) => (t.id === editingTask.id ? res.data : t)));
-        setEditingTask(null);
-      } else {
-        const res = await api.post(
-          "/tasks",
-          { title, description, priority, status },
-          {
-            headers: {
-              "x-user-id": user.id,
-              "x-user-role": user.role,
-              "x-user-email": user.email,
-            },
-          }
-        );
-        setTasks([...tasks, res.data]);
-      }
-
-      setTitle("");
-      setDescription("");
-      setPriority("media");
-      setStatus("pendiente");
+      const res = await api.post("/tasks", taskData, {
+        headers: {
+          "x-user-id": String(user?.id),
+          "x-user-role": user?.role,
+          "x-user-email": user?.email,
+        },
+      });
+      setTasks([...tasks, res.data]);
+      setShowModal(false);
+      setNewTask({
+        title: "",
+        description: "",
+        priority: "media",
+        status: "pendiente",
+      });
+      alert("Tarea creada correctamente");
     } catch (err) {
-      console.error("Error al guardar tarea:", err);
-      alert("Error al guardar tarea ❌");
+      console.error(err);
+      alert("Error al crear la tarea");
+    }
+  };
+
+  // Completar tarea
+  const handleCompleteTask = async (task: Task) => {
+    try {
+      const res = await api.put(
+        `/tasks/${task.id}`,
+        { ...task, status: "completada" },
+        {
+          headers: {
+            "x-user-id": String(user?.id),
+            "x-user-role": user?.role,
+            "x-user-email": user?.email,
+          },
+        }
+      );
+      const updated = tasks.map((t) => (t.id === task.id ? res.data : t));
+      setTasks(updated);
+    } catch (err) {
+      console.error(err);
+      alert("Error al actualizar la tarea");
+    }
+  };
+
+  // Guardar edición
+  const handleSaveEdit = async (updated: Task) => {
+    try {
+      const res = await api.put(`/tasks/${updated.id}`, updated, {
+        headers: {
+          "x-user-id": String(user?.id),
+          "x-user-role": user?.role,
+          "x-user-email": user?.email,
+        },
+      });
+      setTasks(tasks.map((t) => (t.id === updated.id ? res.data : t)));
+      setEditTask(null);
+      alert("Tarea actualizada correctamente");
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar cambios");
     }
   };
 
   // Eliminar tarea
-  const handleDeleteTask = async (id: number) => {
-    if (!user) return;
-    if (!confirm("¿Seguro que querés eliminar esta tarea?")) return;
-
+  const handleDeleteTask = async (taskId?: number) => {
+    if (!taskId) return;
+    if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
     try {
-      await api.delete(`/tasks/${id}`, {
+      await api.delete(`/tasks/${taskId}`, {
         headers: {
-          "x-user-id": user.id,
-          "x-user-role": user.role,
-          "x-user-email": user.email,
+          "x-user-id": String(user?.id),
+          "x-user-role": user?.role,
+          "x-user-email": user?.email,
         },
       });
-      setTasks(tasks.filter((t) => t.id !== id));
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setFilteredTasks((prev) => prev.filter((t) => t.id !== taskId));
     } catch (err) {
-      console.error("Error al eliminar tarea:", err);
-      alert("Error al eliminar tarea ❌");
+      console.error("Error al eliminar la tarea:", err);
+      alert("Error inesperado al eliminar la tarea");
     }
   };
 
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task);
-    setTitle(task.title);
-    setDescription(task.description);
-    setPriority(task.priority);
-    setStatus(task.status);
-  };
-
-  // 🔍 Filtrar y ordenar tareas
-  const filteredTasks = tasks
-    .filter((t) =>
-      filterStatus === "todas" ? true : t.status === filterStatus
-    )
-    .filter((t) =>
-      filterPriority === "todas" ? true : t.priority === filterPriority
-    )
-    .sort((a, b) => {
-      if (sortBy === "titulo") return a.title.localeCompare(b.title);
-      if (sortBy === "prioridad")
-        return a.priority.localeCompare(b.priority);
-      return a.id - b.id;
-    });
-
-  if (loading) return <p>Cargando tareas...</p>;
-  if (!user) return <p>No estás autenticado</p>;
+  // Render
+  if (loading)
+    return <p className="text-center mt-10 text-gray-600">Cargando tareas...</p>;
+  if (!user)
+    return <p className="text-center mt-10 text-gray-600">No estás autenticado.</p>;
 
   return (
-    <div style={{ padding: "2rem", textAlign: "center" }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h2>📋 Lista de Tareas</h2>
-        <button onClick={handleLogout}>Cerrar sesión 🚪</button>
-      </div>
-
-      <p>Usuario: <strong>{user.name}</strong></p>
-
-      {/* 🔹 Filtros */}
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          justifyContent: "center",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="todas">Todas</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="en progreso">En progreso</option>
-          <option value="completada">Completada</option>
-        </select>
-
-        <select
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value)}
-        >
-          <option value="todas">Todas</option>
-          <option value="alta">Alta</option>
-          <option value="media">Media</option>
-          <option value="baja">Baja</option>
-        </select>
-
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-          <option value="fecha">Ordenar por Fecha</option>
-          <option value="titulo">Ordenar por Título</option>
-          <option value="prioridad">Ordenar por Prioridad</option>
-        </select>
-      </div>
-
-      {/* 🔹 Formulario */}
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          margin: "2rem auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-          maxWidth: "400px",
-        }}
-      >
-        <h3>{editingTask ? "✏️ Editar Tarea" : "➕ Nueva Tarea"}</h3>
-        <input
-          type="text"
-          placeholder="Título"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <textarea
-          placeholder="Descripción"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-          <option value="alta">Alta</option>
-          <option value="media">Media</option>
-          <option value="baja">Baja</option>
-        </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="pendiente">Pendiente</option>
-          <option value="en progreso">En progreso</option>
-          <option value="completada">Completada</option>
-        </select>
-        <button type="submit">
-          {editingTask ? "Guardar cambios 💾" : "Agregar tarea ➕"}
-        </button>
-        {editingTask && (
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10 py-8">
+      <div className="max-w-6xl mx-auto relative z-10">
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Gestor de Tareas
+          </h2>
           <button
-            type="button"
-            onClick={() => {
-              setEditingTask(null);
-              setTitle("");
-              setDescription("");
-              setPriority("media");
-              setStatus("pendiente");
-            }}
+            onClick={() => setShowModal(true)}
+            className="border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition"
           >
-            Cancelar ❌
+            + Nueva Tarea
           </button>
-        )}
-      </form>
+        </div>
 
-      {/* 🔹 Lista */}
-      {filteredTasks.length === 0 ? (
-        <p>No hay tareas que coincidan con los filtros.</p>
-      ) : (
-        <ul style={{ textAlign: "left", marginTop: "1.5rem" }}>
-          {filteredTasks.map((t) => (
-            <li key={t.id} style={{ marginBottom: "1rem" }}>
-              <strong>{t.title}</strong> — {t.status} ({t.priority})
-              <p>{t.description}</p>
-              <button onClick={() => handleEditTask(t)}>✏️ Editar</button>{" "}
-              <button onClick={() => handleDeleteTask(t.id)}>🗑️ Eliminar</button>
-            </li>
-          ))}
-        </ul>
+        {/* FILTROS */}
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 justify-center items-center">
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-72 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+          />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en progreso">En progreso</option>
+            <option value="completada">Completada</option>
+          </select>
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+          >
+            <option value="todas">Todas las prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+
+        {/* TABLA */}
+        {filteredTasks.length === 0 ? (
+          <p className="text-center text-gray-600">No hay tareas que coincidan.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white relative z-10" style={{ overflow: "visible" }}>
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
+                <tr>
+                  <th className="px-4 py-3">Título</th>
+                  <th className="px-4 py-3">Descripción</th>
+                  <th className="px-4 py-3 text-center">Prioridad</th>
+                  <th className="px-4 py-3 text-center">Estado</th>
+                  <th className="px-4 py-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((t) => (
+                  <tr key={t.id} className="border-t hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-800">{t.title}</td>
+                    <td className="px-4 py-3 text-gray-600 truncate max-w-[300px]">
+                      {t.description}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded-md ${getPriorityStyle(
+                          t.priority
+                        )}`}
+                      >
+                        {t.priority.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded-md ${getStatusStyle(
+                          t.status
+                        )}`}
+                      >
+                        {t.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center relative z-50">
+                      <TaskActionsMenu
+                        onEdit={() => setEditTask(t)}
+                        onComplete={() => handleCompleteTask(t)}
+                        onDelete={() => handleDeleteTask(t.id)}
+                        disabled={t.status.toLowerCase() === "completada"}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* MODALES */}
+      {showModal && (
+        <TaskEditModal
+          task={newTask}
+          onClose={() => setShowModal(false)}
+          onSave={handleCreateTask}
+        />
+      )}
+      {editTask && (
+        <TaskEditModal
+          task={editTask}
+          onClose={() => setEditTask(null)}
+          onSave={handleSaveEdit}
+        />
       )}
     </div>
   );
