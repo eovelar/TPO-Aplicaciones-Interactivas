@@ -8,27 +8,13 @@ const taskRepository = AppDataSource.getRepository(Task);
 const userRepository = AppDataSource.getRepository(User);
 const historialRepository = AppDataSource.getRepository(Historial);
 
-// 🔹 Obtener todas las tareas
+// 🔹 Obtener todas las tareas (todos los usuarios pueden ver todas)
 export const getTasks = async (req: Request, res: Response) => {
   try {
-    const userId = Number(req.headers["x-user-id"]);
-    const userRole = String(req.headers["x-user-role"]);
-
-    if (!userId || !userRole) {
-      return res.status(400).json({ message: "Faltan datos del usuario autenticado" });
-    }
-
-    const tasks =
-      userRole === "propietario"
-        ? await taskRepository.find({
-            relations: ["user", "assignedTo"],
-            order: { id: "DESC" },
-          })
-        : await taskRepository.find({
-            where: [{ user: { id: userId } }, { assignedTo: { id: userId } }],
-            relations: ["user", "assignedTo"],
-            order: { id: "DESC" },
-          });
+    const tasks = await taskRepository.find({
+      relations: ["user", "assignedTo"],
+      order: { id: "DESC" },
+    });
 
     return res.status(200).json(tasks);
   } catch (error) {

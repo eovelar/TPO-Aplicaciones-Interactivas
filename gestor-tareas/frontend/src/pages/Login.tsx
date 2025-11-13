@@ -25,8 +25,9 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50 flex items-center justify-center">
       <div className="bg-white shadow-xl rounded-xl p-8 w-[90%] sm:w-[400px] border border-gray-200">
         <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
-        Gestor de Tareas
+          Focusin
         </h2>
+
         <form onSubmit={handleLogin} className="space-y-4">
           <input
             type="email"
@@ -36,6 +37,7 @@ export default function Login() {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
             required
           />
+
           <input
             type="password"
             placeholder="Contraseña"
@@ -44,6 +46,7 @@ export default function Login() {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
             required
           />
+
           <button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition"
@@ -51,6 +54,14 @@ export default function Login() {
             Ingresar
           </button>
         </form>
+
+        {/* AGREGADO: Link a Registro */}
+        <p
+          className="mt-5 text-center text-sm text-blue-600 cursor-pointer hover:underline"
+          onClick={() => navigate("/register")}
+        >
+          ¿No tenés cuenta? Crear una cuenta
+        </p>
       </div>
     </div>
   );

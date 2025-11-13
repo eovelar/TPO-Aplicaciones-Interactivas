@@ -10,6 +10,9 @@ interface Task {
   description: string;
   priority: "alta" | "media" | "baja";
   status: string;
+  fecha_limite: string;
+  createdAt?: string;
+  updatedAt?: string;
   assignedTo?: {
     id: number;
     name: string;
@@ -28,6 +31,8 @@ export default function Tasks() {
   const [filterPriority, setFilterPriority] = useState("todas");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [showOnlyMine, setShowOnlyMine] = useState(false); // ✅ toggle nuevo
+
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState<Task>({
@@ -35,11 +40,12 @@ export default function Tasks() {
     description: "",
     priority: "media",
     status: "pendiente",
+    fecha_limite: "",
     assignedTo: null,
   });
 
   // ==============================
-  // 🔹 Cargar tareas desde backend
+  // 🔹 Cargar tareas
   // ==============================
   const fetchTasks = async () => {
     if (!user) return;
@@ -91,8 +97,10 @@ export default function Tasks() {
   // ==============================
   const handleCreateTask = async (taskData: Task) => {
     if (!taskData.title.trim()) return alert("El título es obligatorio");
+    if (!taskData.fecha_limite) return alert("La fecha límite es obligatoria");
+
     try {
-      const res = await api.post(
+      await api.post(
         "/tasks",
         {
           ...taskData,
@@ -114,6 +122,7 @@ export default function Tasks() {
         description: "",
         priority: "media",
         status: "pendiente",
+        fecha_limite: "",
         assignedTo: null,
       });
     } catch (err) {
@@ -134,6 +143,7 @@ export default function Tasks() {
           description: task.description,
           priority: task.priority,
           status: "completada",
+          fecha_limite: task.fecha_limite,
           assignedToId: task.assignedTo ? task.assignedTo.id : null,
         },
         {
@@ -152,7 +162,7 @@ export default function Tasks() {
   };
 
   // ==============================
-  // 🔹 Guardar edición (corregido)
+  // 🔹 Guardar edición
   // ==============================
   const handleSaveEdit = async (updated: any) => {
     if (!updated || !updated.title) return;
@@ -170,10 +180,9 @@ export default function Tasks() {
         description: updated.description,
         priority: updated.priority,
         status: updated.status,
+        fecha_limite: updated.fecha_limite,
         assignedToId: assignedId,
       };
-
-      console.log("📦 Payload enviado a backend:", payload);
 
       await api.put(`/tasks/${updated.id}`, payload, {
         headers: {
@@ -213,7 +222,7 @@ export default function Tasks() {
   };
 
   // ==============================
-  // 🔹 Estilos visuales
+  // 🔹 Helpers visuales
   // ==============================
   const getPriorityStyle = (priority: Task["priority"]) => {
     switch (priority) {
@@ -237,6 +246,19 @@ export default function Tasks() {
     return "bg-gray-100 text-gray-600 border border-gray-200";
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-AR");
+  };
+
+  // ============================================
+  // 🔹 APLICAR TOGGLE (mis tareas / todas)
+  // ============================================
+  const visibleTasks = showOnlyMine
+    ? filteredTasks.filter((t) => t.assignedTo?.id === user?.id)
+    : filteredTasks;
+
   // ==============================
   // 🔹 Render principal
   // ==============================
@@ -247,7 +269,7 @@ export default function Tasks() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10 py-8">
-      <div className="max-w-6xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h2 className="text-2xl font-semibold text-gray-800">Gestor de Tareas</h2>
@@ -256,6 +278,31 @@ export default function Tasks() {
             className="border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition"
           >
             + Nueva Tarea
+          </button>
+        </div>
+
+        {/* TOGGLE MIS TAREAS / TODAS */}
+        <div className="flex justify-center gap-2 mb-5">
+          <button
+            onClick={() => setShowOnlyMine(false)}
+            className={`px-4 py-1 rounded-md text-sm font-medium ${
+              !showOnlyMine
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Todas
+          </button>
+
+          <button
+            onClick={() => setShowOnlyMine(true)}
+            className={`px-4 py-1 rounded-md text-sm font-medium ${
+              showOnlyMine
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Mis tareas
           </button>
         </div>
 
@@ -291,61 +338,69 @@ export default function Tasks() {
         </div>
 
         {/* TABLA */}
-        {filteredTasks.length === 0 ? (
+        {visibleTasks.length === 0 ? (
           <p className="text-center text-gray-600">No hay tareas que coincidan.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white relative z-10">
-            <table className="min-w-full text-sm text-left">
-              <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
-                <tr>
-                  <th className="px-4 py-3">Título</th>
-                  <th className="px-4 py-3">Descripción</th>
-                  <th className="px-4 py-3 text-center">Prioridad</th>
-                  <th className="px-4 py-3 text-center">Estado</th>
-                  <th className="px-4 py-3 text-center">Asignado a</th>
-                  <th className="px-4 py-3 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTasks.map((t) => (
-                  <tr key={t.id} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-800">{t.title}</td>
-                    <td className="px-4 py-3 text-gray-600 truncate max-w-[300px]">
-                      {t.description}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-md ${getPriorityStyle(
-                          t.priority
-                        )}`}
-                      >
-                        {t.priority.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-md ${getStatusStyle(
-                          t.status
-                        )}`}
-                      >
-                        {t.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {t.assignedTo ? `${t.assignedTo.name}` : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-center relative z-50">
-                      <TaskActionsMenu
-                        onEdit={() => setEditTask(t)}
-                        onComplete={() => handleCompleteTask(t)}
-                        onDelete={() => handleDeleteTask(t.id)}
-                        disabled={t.status.toLowerCase() === "completada"}
-                      />
-                    </td>
+          <div className="flex justify-center">
+            <div className="w-full max-w-[95vw] md:max-w-7xl bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+              <table className="w-full table-auto border-collapse text-sm text-left">
+                <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
+                  <tr>
+                    <th className="px-3 py-3">Título</th>
+                    <th className="px-3 py-3">Descripción</th>
+                    <th className="px-3 py-3 text-center">Prioridad</th>
+                    <th className="px-3 py-3 text-center">Estado</th>
+                    <th className="px-3 py-3 text-center">Asignado a</th>
+                    <th className="px-3 py-3 text-center">Fecha Límite</th>
+                    <th className="px-3 py-3 text-center">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {visibleTasks.map((t) => (
+                    <tr key={t.id} className="border-t hover:bg-gray-50">
+                      <td className="px-3 py-3 font-medium text-gray-800 break-words">
+                        {t.title}
+                      </td>
+                      <td className="px-3 py-3 text-gray-600 break-words">
+                        {t.description}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span
+                          className={`px-3 py-1 text-xs font-semibold rounded-md ${getPriorityStyle(
+                            t.priority
+                          )}`}
+                        >
+                          {t.priority.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span
+                          className={`px-3 py-1 text-xs font-semibold rounded-md ${getStatusStyle(
+                            t.status
+                          )}`}
+                        >
+                          {t.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center text-gray-700">
+                        {t.assignedTo ? t.assignedTo.name : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-center text-gray-700">
+                        {formatDate(t.fecha_limite)}
+                      </td>
+                      <td className="px-3 py-3 text-center relative z-50">
+                        <TaskActionsMenu
+                          onEdit={() => setEditTask(t)}
+                          onComplete={() => handleCompleteTask(t)}
+                          onDelete={() => handleDeleteTask(t.id)}
+                          disabled={t.status.toLowerCase() === "completada"}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
