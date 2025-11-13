@@ -41,17 +41,28 @@ export const getTasks = async (req: Request, res: Response) => {
 export const createTask = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.headers["x-user-id"]);
-    const { title, description, priority, status, assignedToId } = req.body;
+    const { title, description, priority, status, assignedToId, fecha_limite } = req.body;
 
     if (!title?.trim()) {
       return res.status(400).json({ message: "El título es obligatorio" });
+    }
+
+    // 🔸 Validar fecha límite
+    if (!fecha_limite) {
+      return res.status(400).json({ message: "La fecha límite es obligatoria" });
+    }
+
+    const limite = new Date(fecha_limite);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (limite < hoy) {
+      return res.status(400).json({ message: "La fecha límite no puede ser en el pasado" });
     }
 
     const creator = await userRepository.findOneBy({ id: userId });
     if (!creator) return res.status(404).json({ message: "Usuario creador no encontrado" });
 
     let assignedUser = creator;
-
     if (assignedToId && !isNaN(Number(assignedToId))) {
       const found = await userRepository.findOneBy({ id: Number(assignedToId) });
       if (found) assignedUser = found;
@@ -62,6 +73,7 @@ export const createTask = async (req: Request, res: Response) => {
       description: description || "",
       priority: priority || "media",
       status: status || "pendiente",
+      fecha_limite,
       user: creator,
       assignedTo: assignedUser,
     });
@@ -77,6 +89,7 @@ export const createTask = async (req: Request, res: Response) => {
         title: newTask.title,
         status: newTask.status,
         priority: newTask.priority,
+        fecha_limite: newTask.fecha_limite,
         assignedTo: newTask.assignedTo?.name,
       },
     });
@@ -88,12 +101,12 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Actualizar tarea (versión forzada y depurada)
+// 🔹 Actualizar tarea (incluye validación de fecha límite)
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = Number(req.headers["x-user-id"]);
-    const { title, description, priority, status, assignedToId } = req.body;
+    const { title, description, priority, status, assignedToId, fecha_limite } = req.body;
 
     console.log("📩 BODY recibido:", req.body);
 
@@ -106,31 +119,37 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const prev = { ...existing };
 
+    // 🔸 Validar fecha límite (si se pasa)
+    if (fecha_limite) {
+      const limite = new Date(fecha_limite);
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      if (limite < hoy) {
+        return res.status(400).json({ message: "La fecha límite no puede ser en el pasado" });
+      }
+    }
+
     // 🔸 Campos básicos
     const newTitle = title ?? existing.title;
     const newDescription = description ?? existing.description;
     const newPriority = priority ?? existing.priority;
     const newStatus = status ?? existing.status;
+    const newFechaLimite = fecha_limite ?? existing.fecha_limite;
 
-    // 🔸 Conversión segura del ID asignado
+    // 🔸 Asignado
     const assignedId = assignedToId ? Number(assignedToId) : null;
-    console.log("➡️ Asignado recibido:", assignedId);
-
-    let newAssignedUser = existing.user; // por defecto el creador
+    let newAssignedUser = existing.user;
 
     if (assignedId && !isNaN(assignedId)) {
       const found = await userRepository.findOneBy({ id: assignedId });
       if (found) {
         newAssignedUser = found;
       } else {
-        console.warn("⚠️ Usuario asignado no encontrado:", assignedId);
         return res.status(400).json({ message: "Usuario asignado no encontrado" });
       }
     }
 
-    console.log("🧾 Ejecutando UPDATE con assigned_to_id =", newAssignedUser.id);
-
-    // 🔸 SQL directo (forzado)
+    // 🔸 Actualizar en BD
     await AppDataSource.query(
       `
       UPDATE task
@@ -139,14 +158,17 @@ export const updateTask = async (req: Request, res: Response) => {
         description = $2,
         priority = $3,
         status = $4,
-        assigned_to_id = $5
-      WHERE id = $6
+        fecha_limite = $5,
+        assigned_to_id = $6,
+        updated_at = NOW()
+      WHERE id = $7
       `,
       [
         newTitle,
         newDescription,
         newPriority,
         newStatus,
+        newFechaLimite,
         newAssignedUser.id,
         Number(id),
       ]
@@ -162,12 +184,14 @@ export const updateTask = async (req: Request, res: Response) => {
           title: prev.title,
           status: prev.status,
           priority: prev.priority,
+          fecha_limite: prev.fecha_limite,
           assignedTo: prev.assignedTo?.name || null,
         },
         despues: {
           title: newTitle,
           status: newStatus,
           priority: newPriority,
+          fecha_limite: newFechaLimite,
           assignedTo: newAssignedUser?.name || null,
         },
       },
@@ -177,8 +201,6 @@ export const updateTask = async (req: Request, res: Response) => {
       where: { id: Number(id) },
       relations: ["assignedTo", "user"],
     });
-
-    console.log("✅ Tarea actualizada:", updatedTask?.assignedTo?.name);
 
     return res.status(200).json({
       message: "Tarea actualizada correctamente ✅",

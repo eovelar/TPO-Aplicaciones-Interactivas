@@ -4,6 +4,8 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from "typeorm";
 import { User } from "./User";
 import { Team } from "./Team";
@@ -25,29 +27,27 @@ export class Task {
   @Column({ default: "media" })
   priority!: string;
 
-  // 🔹 Usuario que creó la tarea
-  @ManyToOne(() => User, (user) => user.tasks, {
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
-  })
+  @Column({ type: "date", nullable: false })
+  fecha_limite!: string; // formato YYYY-MM-DD
+
+  @CreateDateColumn({ type: "timestamp" })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ type: "timestamp" })
+  updatedAt!: Date;
+
+  @ManyToOne(() => User, (user) => user.tasks, { onDelete: "CASCADE" })
   @JoinColumn({ name: "userId" })
   user!: User;
 
-  // 🔹 Usuario asignado (responsable de realizarla)
   @ManyToOne(() => User, (user) => user.assignedTasks, {
     nullable: true,
     onDelete: "SET NULL",
-    onUpdate: "CASCADE",
   })
   @JoinColumn({ name: "assigned_to_id" })
   assignedTo?: User | null;
 
-  // 🔹 Equipo al que pertenece la tarea (opcional)
-  @ManyToOne(() => Team, (team) => team.tasks, {
-    nullable: true,
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
-  })
+  @ManyToOne(() => Team, (team) => team.tasks, { nullable: true, onDelete: "CASCADE" })
   @JoinColumn({ name: "teamId" })
   team?: Team | null;
 }

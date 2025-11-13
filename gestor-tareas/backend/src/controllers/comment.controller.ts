@@ -4,7 +4,7 @@ import { Comment } from "../entities/comment.entities";
 import { Task } from "../entities/Task";
 import { User } from "../entities/User";
 
-// 📌 Listar comentarios por tarea
+// Listar comentarios por tarea
 export const listCommentsByTask = async (req: Request, res: Response) => {
   try {
     const taskId = Number(req.params.taskId);
@@ -12,8 +12,11 @@ export const listCommentsByTask = async (req: Request, res: Response) => {
     const offset = Math.max(Number(req.query.offset ?? 0), 0);
 
     const repo = AppDataSource.getRepository(Comment);
+
+    // Incluimos el usuario relacionado
     const [items, total] = await repo
       .createQueryBuilder("c")
+      .leftJoinAndSelect("c.user", "user") // ✅ carga datos del autor
       .where("c.taskId = :taskId", { taskId })
       .orderBy("c.createdAt", "ASC")
       .take(limit)
@@ -27,7 +30,7 @@ export const listCommentsByTask = async (req: Request, res: Response) => {
   }
 };
 
-// 📌 Crear comentario en una tarea
+// Crear comentario en una tarea
 export const createComment = async (req: Request, res: Response) => {
   try {
     const taskId = Number(req.params.taskId);
@@ -35,20 +38,24 @@ export const createComment = async (req: Request, res: Response) => {
     const { contenido } = req.body as { contenido: string };
 
     if (!contenido?.trim()) {
-      return res.status(400).json({ message: "El contenido no puede estar vacío" });
+      return res
+        .status(400)
+        .json({ message: "El contenido no puede estar vacío" });
     }
 
     // Validar existencia de la tarea
     const taskEntity = await AppDataSource.getRepository(Task).findOne({
       where: { id: taskId },
     });
-    if (!taskEntity) return res.status(404).json({ message: "Tarea no encontrada" });
+    if (!taskEntity)
+      return res.status(404).json({ message: "Tarea no encontrada" });
 
     // Validar existencia del usuario
     const userEntity = await AppDataSource.getRepository(User).findOne({
       where: { id: userId },
     });
-    if (!userEntity) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (!userEntity)
+      return res.status(404).json({ message: "Usuario no encontrado" });
 
     // Crear comentario
     const newComment = AppDataSource.getRepository(Comment).create({
@@ -59,15 +66,20 @@ export const createComment = async (req: Request, res: Response) => {
 
     await AppDataSource.getRepository(Comment).save(newComment);
 
-    // El AuditSubscriber registrará la acción automáticamente
-    res.status(201).json(newComment);
+    // Devolvemos el comentario con el usuario incluido
+    const saved = await AppDataSource.getRepository(Comment).findOne({
+      where: { id: newComment.id },
+      relations: ["user"],
+    });
+
+    res.status(201).json(saved);
   } catch (error) {
     console.error("Error al crear comentario:", error);
     res.status(500).json({ message: "Error interno al crear comentario" });
   }
 };
 
-// 📌 Eliminar comentario (propietario o autor)
+// Eliminar comentario (propietario o autor)
 export const deleteComment = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -76,13 +88,16 @@ export const deleteComment = async (req: Request, res: Response) => {
     const repo = AppDataSource.getRepository(Comment);
     const found = await repo.findOne({ where: { id }, relations: ["user"] });
 
-    if (!found) return res.status(404).json({ message: "Comentario no encontrado" });
+    if (!found)
+      return res.status(404).json({ message: "Comentario no encontrado" });
 
     const isOwner = user.role === "propietario";
-    const isAuthor = found.user.id === user.id;
+    const isAuthor = found.user?.id === user.id;
 
     if (!isOwner && !isAuthor) {
-      return res.status(403).json({ message: "No tienes permisos para borrar este comentario" });
+      return res
+        .status(403)
+        .json({ message: "No tienes permisos para borrar este comentario" });
     }
 
     await repo.remove(found);
