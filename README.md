@@ -98,7 +98,7 @@ Cada modificación genera un registro con:
 ```bash
 cd backend
 npm install
-
+```
 ## 🔧 Archivo `.env`
 DB_USER=postgres DB_PASSWORD=1234 DB_NAME=gestor_tareas DB_HOST=localhost DB_PORT=5432
 ## 🛠 Ejecutar migraciones
