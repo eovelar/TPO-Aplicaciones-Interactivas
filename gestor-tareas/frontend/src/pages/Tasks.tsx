@@ -31,7 +31,7 @@ export default function Tasks() {
   const [filterPriority, setFilterPriority] = useState("todas");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [showOnlyMine, setShowOnlyMine] = useState(false); // ✅ toggle nuevo
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
@@ -253,7 +253,7 @@ export default function Tasks() {
   };
 
   // ============================================
-  // 🔹 APLICAR TOGGLE (mis tareas / todas)
+  // 🔹 MIS TAREAS / TODAS
   // ============================================
   const visibleTasks = showOnlyMine
     ? filteredTasks.filter((t) => t.assignedTo?.id === user?.id)
@@ -281,7 +281,7 @@ export default function Tasks() {
           </button>
         </div>
 
-        {/* TOGGLE MIS TAREAS / TODAS */}
+        {/* TOGGLE */}
         <div className="flex justify-center gap-2 mb-5">
           <button
             onClick={() => setShowOnlyMine(false)}
@@ -375,7 +375,7 @@ export default function Tasks() {
                       </td>
                       <td className="px-3 py-3 text-center">
                         <span
-                          className={`px-3 py-1 text-xs font-semibold rounded-md ${getStatusStyle(
+                          className={`px-3 py-1 text-xs font-semibold rounded-md whitespace-nowrap ${getStatusStyle(
                             t.status
                           )}`}
                         >
@@ -389,11 +389,11 @@ export default function Tasks() {
                         {formatDate(t.fecha_limite)}
                       </td>
                       <td className="px-3 py-3 text-center relative z-50">
+                        {/* ⛔ Se quita el disabled para permitir acciones en completadas */}
                         <TaskActionsMenu
                           onEdit={() => setEditTask(t)}
                           onComplete={() => handleCompleteTask(t)}
                           onDelete={() => handleDeleteTask(t.id)}
-                          disabled={t.status.toLowerCase() === "completada"}
                         />
                       </td>
                     </tr>

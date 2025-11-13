@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/http";
 import { useUser } from "../context/UserContext";
-import { useNavigate } from "react-router-dom"; // 🔹 IMPORTACIÓN NUEVA
+import { useNavigate } from "react-router-dom";
 
 interface Team {
   id: number;
@@ -13,9 +13,11 @@ interface Team {
 
 export default function Teams() {
   const { user } = useUser();
+  const navigate = useNavigate();
+
   const [teams, setTeams] = useState<Team[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
-  const navigate = useNavigate(); // 🔹 INICIALIZACIÓN
+  const [newTeamDescription, setNewTeamDescription] = useState("");
 
   // =====================
   // 🔹 Cargar equipos
@@ -47,7 +49,10 @@ export default function Teams() {
     try {
       await api.post(
         "/teams",
-        { name: newTeamName, description: "" },
+        { 
+          name: newTeamName,
+          description: newTeamDescription
+        },
         {
           headers: {
             "x-user-id": user?.id,
@@ -57,6 +62,7 @@ export default function Teams() {
       );
 
       setNewTeamName("");
+      setNewTeamDescription("");
       fetchTeams();
     } catch (err) {
       alert("No se pudo crear el equipo");
@@ -87,13 +93,12 @@ export default function Teams() {
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="max-w-6xl mx-auto">
-        {/* TÍTULO */}
         <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
           <span>👥</span> Gestión de Equipos
         </h2>
 
         {/* FORMULARIO DE CREACIÓN */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow mb-8 flex flex-col sm:flex-row gap-4 items-center">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow mb-8 flex flex-col gap-4">
           <input
             type="text"
             placeholder="Nombre del nuevo equipo..."
@@ -101,15 +106,23 @@ export default function Teams() {
             onChange={(e) => setNewTeamName(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-purple-300"
           />
+
+          <textarea
+            placeholder="Descripción del equipo (opcional)..."
+            value={newTeamDescription}
+            onChange={(e) => setNewTeamDescription(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-purple-300 min-h-[80px]"
+          />
+
           <button
             onClick={createTeam}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
+            className="self-start bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
           >
             Crear
           </button>
         </div>
 
-        {/* LISTA EN TARJETAS */}
+        {/* LISTA DE TARJETAS */}
         {teams.length === 0 ? (
           <p className="text-center text-gray-600">No hay equipos creados.</p>
         ) : (
@@ -117,14 +130,20 @@ export default function Teams() {
             {teams.map((team) => (
               <div
                 key={team.id}
-                className="bg-white p-5 rounded-xl shadow border border-gray-200 flex flex-col justify-between hover:shadow-md transition"
+                className="bg-white p-5 rounded-xl shadow border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
               >
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
                     {team.name}
                   </h3>
 
-                  <p className="text-gray-500 text-sm mb-2">ID: {team.id}</p>
+                  {team.description && (
+                    <p className="text-gray-600 text-sm mt-1">
+                      {team.description}
+                    </p>
+                  )}
+
+                  <p className="text-gray-500 text-xs mt-2">ID: {team.id}</p>
 
                   <p className="text-gray-700 text-sm">
                     👥 Miembros: <strong>{team.members?.length ?? 0}</strong>
@@ -132,23 +151,19 @@ export default function Teams() {
                 </div>
 
                 <div className="flex justify-between items-center mt-5">
-
-                  {/* 🔹 VER DETALLES → redirige a /teams/:id */}
                   <button
-                    onClick={() => navigate(`/teams/${team.id}`)}
                     className="text-purple-600 hover:underline text-sm"
+                    onClick={() => navigate(`/teams/${team.id}`)}
                   >
                     Ver detalles
                   </button>
 
-                  {/* 🔹 BOTÓN ELIMINAR */}
                   <button
                     onClick={() => deleteTeam(team.id)}
                     className="text-red-500 hover:text-red-700 font-medium text-sm"
                   >
                     Eliminar
                   </button>
-
                 </div>
               </div>
             ))}
