@@ -1,329 +1,236 @@
-# TPO-Aplicaciones-Interactivas
-Trabajo Práctico Integrador - Gestión de Tareas Colaborativas.
+# Focusin – Gestor de Tareas
 
-# Gestor de Tareas – Backend
-
-Proyecto desarrollado en **Node.js + Express + TypeScript**,que implementa un sistema de gestión de usuarios y tareas con conexión a **PostgreSQL** y autenticación mediante **JWT**.
-
-
-## 🚀 Tecnologías usadas
-
-- Node.js + Express
-- TypeScript
-- TypeORM
-- PostgreSQL
-- JWT (jsonwebtoken)
-- dotenv
-- bcrypt
-
-## 📋 Prerrequisitos
-
-Asegurate de tener instalado:
-
-* **Node.js** >= 18 LTS (incluye `npm`).
-* **PostgreSQL** >= 13 (con un usuario/password válidos y una base creada o permisos para crearla).
-* **Git** (opcional, para clonar el repo).
-* **OpenSSL** (opcional, para generar claves seguras si lo necesitás).
-
-> Verificá versiones:
->
-> ```bash
-> node -v
-> npm -v
-> psql --version
-> ```
+Sistema completo de gestión de tareas y equipos, desarrollado con **React + TypeScript + Tailwind**, **Node.js + Express**, **TypeORM**, y **PostgreSQL**.  
+Incluye asignación de tareas, roles de usuario, gestión de equipos, historial de cambios y una interfaz moderna y responsiva.
 
 ---
 
-## 🚀 Instalación
+## 🚀 Descripción del Proyecto
 
-Cloná el repositorio y cargá dependencias:
+**Focusin** es una aplicación web diseñada para organizar tareas dentro de equipos de trabajo.  
+Permite crear, editar, asignar y completar tareas, además de administrar equipos con miembros y ver todas las tareas relacionadas.  
+El sistema está dividido en un **backend REST** y un **frontend interactivo**, formando una arquitectura completa y escalable.
 
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+### **Frontend**
+- React + Vite  
+- TypeScript  
+- TailwindCSS  
+- React Router DOM  
+- Axios  
+
+### **Backend**
+- Node.js + Express  
+- TypeORM  
+- PostgreSQL  
+- Middlewares personalizados  
+- Controladores por módulo
+
+### **Base de Datos**
+- PostgreSQL  
+- Relaciones Many-to-One / Many-to-Many  
+- Tablas:
+  - `users`
+  - `tasks`
+  - `teams`
+  - `team_members`
+  - `historial` (auditoría)
+
+---
+
+## 📌 Funcionalidades Principales
+
+### 🔐 Autenticación simple
+- Login por email y contraseña  
+- Autorización mediante headers:
+  - `x-user-id`
+  - `x-user-role`
+  - `x-user-email`  
+- Roles disponibles:
+  - **Propietario (Admin)**
+  - **Miembro**
+
+---
+
+### 📝 Gestión de Tareas
+- Crear, editar, completar y eliminar tareas  
+- Asignar tareas a miembros  
+- Filtros avanzados:
+  - Estado  
+  - Prioridad  
+  - Búsqueda  
+- Opción **Mis tareas / Todas**  
+- Fecha límite obligatoria  
+- Validación de fechas pasadas  
+- Etiquetas de prioridad y estado con colores  
+- Historial detallado de acciones
+
+---
+
+### 👥 Gestión de Equipos
+- Crear equipos  
+- Agregar descripción  
+- Ver detalles completos del equipo  
+- Invitar miembros por email  
+- Quitar miembros  
+- Ver tareas asignadas al equipo  
+- Vista individual `/teams/:id`
+
+---
+
+### 📊 Auditoría (Historial)
+Cada modificación genera un registro con:
+- Datos previos y nuevos  
+- Fecha y hora  
+- Usuario que realizó el cambio  
+- Acción (CREAR, ACTUALIZAR, ELIMINAR)
+
+---
+
+## 📂 Estructura del Proyecto
+
+### **Backend**
+
+## 📦 Instalación de dependencias
 ```bash
-# 1) Clonar
-git clone <URL-del-repo>
-cd <carpeta-del-repo>/gestor-tareas/backend
-
-# 2) Instalar dependencias
+cd backend
 npm install
 
----
-
-## ▶️ Modos de ejecución
-
-### Desarrollo (hot reload)
-
-Si el proyecto incluye `ts-node-dev`/`nodemon`, podés correr:
-
-```bash
-npm run dev
-```
-
-* Compila en memoria y reinicia al detectar cambios.
-* Ideal para trabajar desde VS Code.
-
-### Producción / Ejecución desde JavaScript compilado
-
-Primero **compilá** TypeScript a JavaScript y luego ejecutá `dist/`:
-
-```bash
-npm run build   # compila a ./dist
-npm start       # ejecuta: node dist/index.js
-```
-
-> Si al hacer `npm start` ves logs como `✅ Conectado a PostgreSQL` y `🚀 Server escuchando en puerto 4000`, la API está arriba.
+## 🔧 Archivo `.env`
+DB_USER=postgres DB_PASSWORD=1234 DB_NAME=gestor_tareas DB_HOST=localhost DB_PORT=5432
+## 🛠 Ejecutar migraciones
+bash npm run migration:run
+## 🚀 Iniciar servidor
+bash npm run dev
+Backend disponible en: **[http://localhost:4000](http://localhost:4000)**
 
 ---
 
-> Si devuelve Error: listen EADDRINUSE: address already in use :::4000
+# 💻 Frontend
 
-```powershell
-Stop-Process -Id (Get-NetTCPConnection -LocalPort 4000).OwningProcess -Force
-```
-
-
-## 🧩 Migraciones y Seeds (TypeORM)
-
-> Si el proyecto usa **TypeORM** con DataSource (por ej. `src/data-source.ts`), podés trabajar migraciones así (nombres y paths a modo de ejemplo):
-
-**Generar una migración**
-
-```bash
-npm run typeorm -- migration:generate -d src/data-source.ts src/migrations/InitSchema
-```
-
-**Crear una migración vacía**
-
-```bash
-npm run typeorm -- migration:create src/migrations/AddSomeTable
-```
-
-**Aplicar migraciones**
-
-```bash
-npm run typeorm -- migration:run -d src/data-source.ts
-```
-
-**Revertir la última**
-
-```bash
-npm run typeorm -- migration:revert -d src/data-source.ts
-```
-
-**Seeds (si existen)**
-
-```bash
-# ejemplo, si tenés un script dedicado
-npm run seed
-```
-
-> Asegurate de que la configuración de TypeORM lea tu `.env` y apunte a la misma base.
+## 📦 Instalación
+bash cd frontend npm install
+## 🚀 Ejecutar aplicación
+bash npm run dev
+Frontend disponible en: **[http://localhost:5173](http://localhost:5173)**
 
 ---
 
-## 🧭 Estructura del proyecto (real)
+# 🔌 Endpoints Principales
 
-```txt
-backend/
-├─ src/
-│  ├─ controllers/          # controladores Express
-│  ├─ entities/             # entidades TypeORM (Task, Team, User, comment.entities, historial.entities)
-│  ├─ middleware/           # auth, role, error, validate, request-context
-│  ├─ migrations/           # migraciones TypeORM
-│  ├─ routes/               # admin.routes, auth.routes, comment.routes, historial.routes, task.routes, team.routes, user.routes
-│  ├─ schemas/              # (si usás Joi/Zod para validaciones)
-│  ├─ subscribers/          # (listeners de TypeORM si aplica)
-│  ├─ types/                # tipos globales/augmentations
-│  ├─ utils/                # helpers
-│  ├─ validations/          # validaciones específicas
-│  ├─ index.ts              # punto de entrada del servidor
-│  ├─ seed.ts               # script de seeds
-│  └─ swagger.ts            # definición/servidor de Swagger
-├─ .env
-├─ tsconfig.json
-├─ package.json
-└─ README.md
-```
+## 🔐 Auth
+
+| Método | Ruta             | Descripción       |
+| ------ | ---------------- | ----------------- |
+| POST   | `/auth/register` | Registrar usuario |
+| POST   | `/auth/login`    | Iniciar sesión    |
+| DELETE | `/auth/user/:id` | Eliminar usuario  |
 
 ---
 
-## 📡 Endpoints y pruebas rápidas (cURL)
+## 📝 Tasks
 
-> Base por defecto (ajustá el puerto si cambia):
-
-```bash
-URL_BASE=http://localhost:4000
-```
-
-### Auth
-
-* `POST /api/auth/register`
-* `POST /api/auth/login`
-
-**Registrar un nuevo usuario** (ejemplo):
-
-```bash
-curl -s -X POST "http://localhost:4000/api/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "New User",
-    "email": "new.user@example.com",
-    "password": "123456",
-    "role": "miembro"
-  }'
-```
-
-
-**Login** (ejemplo):
-
-```bash
-curl -s -X POST "http://localhost:4000/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test.com","password":"admin123"}'
-```
-
-Guarda el token:
-
-```bash
-TOKEN="eyJhbGciOi..."  # reemplazar por el devuelto
-```
-
-### Users
-
-```bash
-curl -s -X GET "http://localhost:4000/api/users" \
-  -H "Authorization: Bearer $TOKEN" \
-```
-
-* `GET /api/users` (según roles)
-* `GET /api/users/:id`
-* `POST /api/users`
-* `PUT /api/users/:id`
-* `DELETE /api/users/:id`
-
-### Teams
-
-**Ver listado de grupos**
-
-```bash
-curl -s -X GET "http://localhost:4000/api/groups" \
-  -H "Authorization: Bearer $TOKEN"
-```
-**Crear grupo**
-
-```bash
-curl -s -X POST "http://localhost:4000/api/groups" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Backend Team",
-    "description": "All backend developers"
-  }'
-```
-
-* `GET /api/teams`
-* `POST /api/teams`
-* `PUT /api/teams/:id`
-* `DELETE /api/teams/:id`
-
-### Tasks
-
-* `GET /api/tasks`
-* `POST /api/tasks`
-* `PUT /api/tasks/:id`
-* `DELETE /api/tasks/:id`
-
-**Crear tarea (ejemplo)**
-
-```bash
-curl -s -X POST "http://localhost:4000/api/tasks" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"titulo":"Primera tarea","descripcion":"Ejemplo","estado":"pendiente"}'
-```
-**Ver el listado de tareas**
-
-```bash
-curl -s -X GET "http://localhost:4000/api/tasks" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Comments
-
-**Comentar una tarea** 
-
-```bash
- curl -s -X POST "http://localhost:400/api/comments" \
-> -H "Content-Type: application/json" \
-> -H "Autorizathion: Bearer TOKEN" \
-> -d '{
-> "contenido": "Este es un comentario de prueba",
-> "taskId": 1,
-> "userId": 2
-> }'
-```
-
-* `GET /api/comments`
-* `POST /api/comments`
-* `PUT /api/comments/:id`
-* `DELETE /api/comments/:id`
-
-### Historial
-
-* `GET /api/historial`
-
-### Admin
-
-* Endpoints bajo `/api/admin` si corresponde (gestión avanzada, sólo `propietario`).
-
-> Los middlewares **auth** y **role** ya existen (`auth.middleware.ts`, `role.middleware.ts`). Recordá enviar `Authorization: Bearer <token>` y setear los roles requeridos en cada ruta.
+| Método | Ruta         | Descripción    |
+| ------ | ------------ | -------------- |
+| GET    | `/tasks`     | Listar tareas  |
+| POST   | `/tasks`     | Crear tarea    |
+| PUT    | `/tasks/:id` | Editar tarea   |
+| DELETE | `/tasks/:id` | Eliminar tarea |
 
 ---
 
-## 🧪 Documentación Swagger / Colecciones
+## 👥 Teams
 
-* Tenés `src/swagger.ts`. Si lo estás exponiendo, suele montarse en `GET /api/docs` o `/docs`. Probá:
-
-  * `http://localhost:4000/api/docs`
-  * `http://localhost:4000/docs`
-* Si preferís Postman/Insomnia, exportá la colección y linkeala aquí.
+| Método | Ruta                         | Descripción     |
+| ------ | ---------------------------- | --------------- |
+| GET    | `/teams`                     | Listar equipos  |
+| POST   | `/teams`                     | Crear equipo    |
+| PUT    | `/teams/:id`                 | Editar equipo   |
+| DELETE | `/teams/:id`                 | Eliminar equipo |
+| POST   | `/teams/:id/invite`          | Invitar miembro |
+| DELETE | `/teams/:id/members/:userId` | Quitar miembro  |
 
 ---
 
-## 🧰 Integración con VS Code
+# 🧱 Modelos (Entities)
 
-**Extensiones recomendadas**
+## 👤 User
 
-* ESLint / Prettier (formato y calidad de código)
-* EditorConfig (consistencia)
-* DotENV
-* REST Client (para testear APIs desde VS Code)
+* id
+* name
+* email
+* password
+* role (`propietario` | `miembro`)
+* tasks creadas
+* assignedTasks
+* teams (many-to-many)
 
-**Depurar en VS Code (launch.json ejemplo)**
+---
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Dev: ts-node",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["-r", "ts-node/register", "src/index.ts"],
-      "envFile": "${workspaceFolder}/.env",
-      "cwd": "${workspaceFolder}",
-      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
-    }
-  ]
-}
-```
+## 📝 Task
 
-## 🛠️ Solución de problemas
+* id
+* title
+* description
+* priority (`alta`, `media`, `baja`)
+* status
+* fecha_limite
+* user (creador)
+* assignedTo (destinatario)
 
-* **`npm: command not found`**: instalá Node.js (incluye npm) y reabrí la terminal.
-* **`ECONNREFUSED`/`connect ENOENT` a PostgreSQL**: verifica `DB_HOST`, `DB_PORT`, credenciales y que el servicio esté arriba (`pg_isready`).
-* **`role "postgres" does not exist`**: crea el usuario o ajustá `DB_USER`.
-* **No compila TypeScript**: corré `npm run build` y revisá errores del `tsc`. Confirmá rutas en `tsconfig.json`.
-* **`Error: listen EADDRINUSE :4000`**: el puerto está en uso. Cerrá el proceso o cambiá `PORT` en `.env`.
-* **Variables de entorno no cargan**: confirmá que `dotenv` se ejecute antes que el resto en tu `index.ts`.
+---
+
+## 👥 Team
+
+* id
+* name
+* description
+* owner
+* members (many-to-many)
+
+---
+
+## 📊 Historial
+
+* id
+* entidad
+* entidadId
+* accion
+* usuarioId
+* detalles (JSON antes/después)
+
+---
+
+# 🖼 Vista del Sistema
+
+Incluye:
+
+* Login
+* Registro
+* Dashboard de tareas
+* Crear/editar tarea
+* Filtros avanzados
+* Vista “Mis tareas / Todas”
+* Equipos en tarjetas
+* Vista detallada del equipo con:
+
+  * descripción
+  * miembros
+  * tareas asignadas
+
+---
+
+# Roadmap
+
+* CRUD de tareas
+* CRUD de equipos
+* Filtros y búsqueda
+* Roles
+* Auditoría
+* Mis tareas
+* Vista detallada de equipo
+* Invitación y remoción de miembros
+
