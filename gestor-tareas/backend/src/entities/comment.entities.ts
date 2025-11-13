@@ -9,7 +9,7 @@ import {
 import { Task } from "./Task";
 import { User } from "./User";
 
-@Entity({ name: "comments" })
+@Entity("comment")
 export class Comment {
   @PrimaryGeneratedColumn()
   id!: number;

@@ -1,7 +1,7 @@
 // src/controllers/historial.controller.ts
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
-import { Historial } from "../entities/historial.entities";
+import { Historial } from "../entities/Historial.entities";
 
 export const getHistorial = async (req: Request, res: Response) => {
   const repo = AppDataSource.getRepository(Historial);

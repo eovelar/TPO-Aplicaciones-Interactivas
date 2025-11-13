@@ -5,21 +5,27 @@ import { prettyJson } from "../utils/response";
 
 const userRepo = AppDataSource.getRepository(User);
 
-// Listar todos los usuarios → solo propietario
+// 🔹 Listar todos los usuarios → solo propietario
 export const getUsers = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
       return prettyJson(res, { message: "Solo propietarios pueden ver usuarios" }, 403);
     }
 
-    const users = await userRepo.find();
-    prettyJson(res, users);
+    const users = await userRepo.find({
+      select: ["id", "name", "email", "role"], // seguridad: no devolver contraseñas
+    });
+    return prettyJson(res, users);
   } catch (error) {
-    prettyJson(res, { message: "Error al obtener usuarios", error: (error as Error).message }, 500);
+    return prettyJson(
+      res,
+      { message: "Error al obtener usuarios", error: (error as Error).message },
+      500
+    );
   }
 };
 
-// Obtener un usuario por id → solo propietario
+// 🔹 Obtener un usuario por ID → solo propietario
 export const getUserById = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -27,17 +33,24 @@ export const getUserById = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const user = await userRepo.findOne({ where: { id: Number(id) } });
+    const user = await userRepo.findOne({
+      where: { id: Number(id) },
+      select: ["id", "name", "email", "role"],
+    });
 
     if (!user) return prettyJson(res, { message: "Usuario no encontrado" }, 404);
 
-    prettyJson(res, user);
+    return prettyJson(res, user);
   } catch (error) {
-    prettyJson(res, { message: "Error al obtener usuario", error: (error as Error).message }, 500);
+    return prettyJson(
+      res,
+      { message: "Error al obtener usuario", error: (error as Error).message },
+      500
+    );
   }
 };
 
-// Eliminar un usuario → solo propietario
+// 🔹 Eliminar un usuario → solo propietario
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -50,13 +63,17 @@ export const deleteUser = async (req: Request, res: Response) => {
     if (!user) return prettyJson(res, { message: "Usuario no encontrado" }, 404);
 
     await userRepo.remove(user);
-    prettyJson(res, { message: "Usuario eliminado" });
+    return prettyJson(res, { message: "Usuario eliminado correctamente ✅" });
   } catch (error) {
-    prettyJson(res, { message: "Error al eliminar usuario", error: (error as Error).message }, 500);
+    return prettyJson(
+      res,
+      { message: "Error al eliminar usuario", error: (error as Error).message },
+      500
+    );
   }
 };
 
-// Actualizar datos de un usuario → solo propietario
+// 🔹 Actualizar datos de un usuario → solo propietario
 export const updateUser = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -73,8 +90,12 @@ export const updateUser = async (req: Request, res: Response) => {
     user.role = req.body.role ?? user.role;
 
     await userRepo.save(user);
-    prettyJson(res, { message: "Usuario actualizado", user });
+    return prettyJson(res, { message: "Usuario actualizado correctamente ✅", user });
   } catch (error) {
-    prettyJson(res, { message: "Error al actualizar usuario", error: (error as Error).message }, 500);
+    return prettyJson(
+      res,
+      { message: "Error al actualizar usuario", error: (error as Error).message },
+      500
+    );
   }
 };

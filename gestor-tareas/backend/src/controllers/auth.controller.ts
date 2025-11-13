@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
+
 const userRepo = AppDataSource.getRepository(User);
 
-// Registro de usuario
+// 🔹 Registro de usuario
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role } = req.body;
@@ -15,47 +16,57 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Crear usuario nuevo
-    const user = userRepo.create({ name, email, password, role });
-    await userRepo.save(user);
+    const newUser = userRepo.create({ name, email, password, role });
+    await userRepo.save(newUser);
 
-    res.status(201).json({ message: "Usuario registrado", user });
+    return res.status(201).json({
+      message: "Usuario registrado correctamente ✅",
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error en registro", error });
+    console.error("Error en registro:", error);
+    return res.status(500).json({ message: "Error en registro", error });
   }
 };
 
-// Login de usuario 
+// 🔹 Login de usuario (sin JWT, usando headers)
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const user = await userRepo.findOne({ where: { email } });
-    if (!user) {
+    const existingUser = await userRepo.findOne({ where: { email } });
+    if (!existingUser) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    const valid = await user.checkPassword(password);
+    const valid = await existingUser.checkPassword(password);
     if (!valid) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // En lugar de token, devolvemos directamente los datos del usuario
-    res.json({
-      message: "Login exitoso",
+    // En lugar de token, devolvemos los datos del usuario
+    return res.status(200).json({
+      message: "Login exitoso ✅",
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        id: existingUser.id,
+        name: existingUser.name,
+        email: existingUser.email,
+        role: existingUser.role,
       },
-      info: "Usá estos datos en headers (x-user-id, x-user-role) para probar endpoints.",
+      info: "Usá estos datos en los headers (x-user-id, x-user-role) para probar endpoints.",
     });
   } catch (error) {
-    res.status(500).json({ message: "Error en login", error });
+    console.error("Error en login:", error);
+    return res.status(500).json({ message: "Error en login", error });
   }
 };
 
-// Eliminar usuario → solo propietario
+// 🔹 Eliminar usuario → solo propietario
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -64,14 +75,15 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     const { id } = req.params;
 
-    const user = await userRepo.findOne({ where: { id: Number(id) } });
-    if (!user) {
+    const existingUser = await userRepo.findOne({ where: { id: Number(id) } });
+    if (!existingUser) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    await userRepo.remove(user);
-    res.json({ message: "Usuario eliminado correctamente" });
+    await userRepo.remove(existingUser);
+    return res.status(200).json({ message: "Usuario eliminado correctamente ✅" });
   } catch (error) {
-    res.status(500).json({ message: "Error al eliminar usuario", error });
+    console.error("Error al eliminar usuario:", error);
+    return res.status(500).json({ message: "Error al eliminar usuario", error });
   }
 };

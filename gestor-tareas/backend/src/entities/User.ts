@@ -10,7 +10,7 @@ import * as bcrypt from "bcrypt";
 import { Task } from "./Task";
 import { Team } from "./Team";
 
-@Entity()
+@Entity("user") 
 export class User {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -27,9 +27,13 @@ export class User {
   @Column({ default: "miembro" })
   role!: string;
 
-  // Un usuario puede tener muchas tareas
+  // Un usuario puede crear muchas tareas
   @OneToMany(() => Task, (task) => task.user)
   tasks!: Task[];
+
+  // Un usuario puede tener tareas asignadas por otro
+  @OneToMany(() => Task, (task) => task.assignedTo)
+  assignedTasks!: Task[];
 
   // Un usuario puede ser propietario de varios equipos
   @OneToMany(() => Team, (team) => team.owner)

@@ -4,13 +4,18 @@ import { useUser } from "../context/UserContext";
 import TaskEditModal from "../components/TaskEditModal";
 import TaskActionsMenu from "../components/TaskActionsMenu";
 
-// Unificamos el tipo Task para creación y edición
 interface Task {
-  id?: number; // opcional → nuevas tareas no lo tienen
+  id?: number;
   title: string;
   description: string;
   priority: "alta" | "media" | "baja";
   status: string;
+  assignedTo?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  assignedToId?: number | null;
 }
 
 export default function Tasks() {
@@ -30,32 +35,186 @@ export default function Tasks() {
     description: "",
     priority: "media",
     status: "pendiente",
+    assignedTo: null,
   });
 
-  // Cargar tareas del servidor
-  useEffect(() => {
+  // ==============================
+  // 🔹 Cargar tareas desde backend
+  // ==============================
+  const fetchTasks = async () => {
     if (!user) return;
-    const fetchTasks = async () => {
-      try {
-        const res = await api.get("/tasks", {
-          headers: {
-            "x-user-id": String(user.id),
-            "x-user-role": user.role,
-            "x-user-email": user.email,
-          },
-        });
-        setTasks(res.data);
-        setFilteredTasks(res.data);
-      } catch (err) {
-        console.error("Error al cargar tareas:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      const res = await api.get("/tasks", {
+        headers: {
+          "x-user-id": String(user.id),
+          "x-user-role": user.role,
+          "x-user-email": user.email,
+        },
+      });
+      setTasks(res.data);
+      setFilteredTasks(res.data);
+    } catch (err) {
+      console.error("Error al cargar tareas:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTasks();
   }, [user]);
 
-  // Estilos visuales
+  // ==============================
+  // 🔹 Filtrado dinámico
+  // ==============================
+  useEffect(() => {
+    let filtered = [...tasks];
+    if (filterStatus !== "todos")
+      filtered = filtered.filter((t) =>
+        t.status.toLowerCase().includes(filterStatus)
+      );
+    if (filterPriority !== "todas")
+      filtered = filtered.filter((t) => t.priority === filterPriority);
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q)
+      );
+    }
+    setFilteredTasks(filtered);
+  }, [filterStatus, filterPriority, searchQuery, tasks]);
+
+  // ==============================
+  // 🔹 Crear tarea
+  // ==============================
+  const handleCreateTask = async (taskData: Task) => {
+    if (!taskData.title.trim()) return alert("El título es obligatorio");
+    try {
+      const res = await api.post(
+        "/tasks",
+        {
+          ...taskData,
+          assignedToId: taskData.assignedTo?.id || null,
+        },
+        {
+          headers: {
+            "x-user-id": String(user?.id),
+            "x-user-role": user?.role,
+            "x-user-email": user?.email,
+          },
+        }
+      );
+
+      await fetchTasks();
+      setShowModal(false);
+      setNewTask({
+        title: "",
+        description: "",
+        priority: "media",
+        status: "pendiente",
+        assignedTo: null,
+      });
+    } catch (err) {
+      console.error("❌ Error al crear tarea:", err);
+      alert("Error al crear la tarea");
+    }
+  };
+
+  // ==============================
+  // 🔹 Completar tarea
+  // ==============================
+  const handleCompleteTask = async (task: Task) => {
+    try {
+      await api.put(
+        `/tasks/${task.id}`,
+        {
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          status: "completada",
+          assignedToId: task.assignedTo ? task.assignedTo.id : null,
+        },
+        {
+          headers: {
+            "x-user-id": String(user?.id),
+            "x-user-role": user?.role,
+            "x-user-email": user?.email,
+          },
+        }
+      );
+      await fetchTasks();
+    } catch (err) {
+      console.error("❌ Error al completar tarea:", err);
+      alert("Error al actualizar la tarea");
+    }
+  };
+
+  // ==============================
+  // 🔹 Guardar edición (corregido)
+  // ==============================
+  const handleSaveEdit = async (updated: any) => {
+    if (!updated || !updated.title) return;
+
+    try {
+      const assignedId =
+        updated.assignedToId !== undefined
+          ? Number(updated.assignedToId)
+          : updated.assignedTo
+          ? Number(updated.assignedTo.id)
+          : null;
+
+      const payload = {
+        title: updated.title,
+        description: updated.description,
+        priority: updated.priority,
+        status: updated.status,
+        assignedToId: assignedId,
+      };
+
+      console.log("📦 Payload enviado a backend:", payload);
+
+      await api.put(`/tasks/${updated.id}`, payload, {
+        headers: {
+          "x-user-id": String(user?.id),
+          "x-user-role": user?.role,
+          "x-user-email": user?.email,
+        },
+      });
+
+      await fetchTasks();
+      setEditTask(null);
+    } catch (err) {
+      console.error("❌ Error al guardar cambios:", err);
+      alert("Error al guardar cambios");
+    }
+  };
+
+  // ==============================
+  // 🔹 Eliminar tarea
+  // ==============================
+  const handleDeleteTask = async (taskId?: number) => {
+    if (!taskId) return;
+    if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
+    try {
+      await api.delete(`/tasks/${taskId}`, {
+        headers: {
+          "x-user-id": String(user?.id),
+          "x-user-role": user?.role,
+          "x-user-email": user?.email,
+        },
+      });
+      await fetchTasks();
+    } catch (err) {
+      console.error("Error al eliminar la tarea:", err);
+      alert("Error inesperado al eliminar la tarea");
+    }
+  };
+
+  // ==============================
+  // 🔹 Estilos visuales
+  // ==============================
   const getPriorityStyle = (priority: Task["priority"]) => {
     switch (priority) {
       case "alta":
@@ -78,114 +237,9 @@ export default function Tasks() {
     return "bg-gray-100 text-gray-600 border border-gray-200";
   };
 
-  // Filtrado dinámico
-  useEffect(() => {
-    let filtered = [...tasks];
-    if (filterStatus !== "todos")
-      filtered = filtered.filter((t) =>
-        t.status.toLowerCase().includes(filterStatus)
-      );
-    if (filterPriority !== "todas")
-      filtered = filtered.filter((t) => t.priority === filterPriority);
-    if (searchQuery.trim() !== "") {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q)
-      );
-    }
-    setFilteredTasks(filtered);
-  }, [filterStatus, filterPriority, searchQuery, tasks]);
-
-  // Crear tarea
-  const handleCreateTask = async (taskData: Task) => {
-    if (!taskData.title.trim()) return alert("El título es obligatorio");
-    try {
-      const res = await api.post("/tasks", taskData, {
-        headers: {
-          "x-user-id": String(user?.id),
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-      });
-      setTasks([...tasks, res.data]);
-      setShowModal(false);
-      setNewTask({
-        title: "",
-        description: "",
-        priority: "media",
-        status: "pendiente",
-      });
-      alert("Tarea creada correctamente");
-    } catch (err) {
-      console.error(err);
-      alert("Error al crear la tarea");
-    }
-  };
-
-  // Completar tarea
-  const handleCompleteTask = async (task: Task) => {
-    try {
-      const res = await api.put(
-        `/tasks/${task.id}`,
-        { ...task, status: "completada" },
-        {
-          headers: {
-            "x-user-id": String(user?.id),
-            "x-user-role": user?.role,
-            "x-user-email": user?.email,
-          },
-        }
-      );
-      const updated = tasks.map((t) => (t.id === task.id ? res.data : t));
-      setTasks(updated);
-    } catch (err) {
-      console.error(err);
-      alert("Error al actualizar la tarea");
-    }
-  };
-
-  // Guardar edición
-  const handleSaveEdit = async (updated: Task) => {
-    try {
-      const res = await api.put(`/tasks/${updated.id}`, updated, {
-        headers: {
-          "x-user-id": String(user?.id),
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-      });
-      setTasks(tasks.map((t) => (t.id === updated.id ? res.data : t)));
-      setEditTask(null);
-      alert("Tarea actualizada correctamente");
-    } catch (err) {
-      console.error(err);
-      alert("Error al guardar cambios");
-    }
-  };
-
-  // Eliminar tarea
-  const handleDeleteTask = async (taskId?: number) => {
-    if (!taskId) return;
-    if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
-    try {
-      await api.delete(`/tasks/${taskId}`, {
-        headers: {
-          "x-user-id": String(user?.id),
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-      });
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-      setFilteredTasks((prev) => prev.filter((t) => t.id !== taskId));
-    } catch (err) {
-      console.error("Error al eliminar la tarea:", err);
-      alert("Error inesperado al eliminar la tarea");
-    }
-  };
-
-  // Render
+  // ==============================
+  // 🔹 Render principal
+  // ==============================
   if (loading)
     return <p className="text-center mt-10 text-gray-600">Cargando tareas...</p>;
   if (!user)
@@ -196,9 +250,7 @@ export default function Tasks() {
       <div className="max-w-6xl mx-auto relative z-10">
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Gestor de Tareas
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Gestor de Tareas</h2>
           <button
             onClick={() => setShowModal(true)}
             className="border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition"
@@ -242,7 +294,7 @@ export default function Tasks() {
         {filteredTasks.length === 0 ? (
           <p className="text-center text-gray-600">No hay tareas que coincidan.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white relative z-10" style={{ overflow: "visible" }}>
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white relative z-10">
             <table className="min-w-full text-sm text-left">
               <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
                 <tr>
@@ -250,6 +302,7 @@ export default function Tasks() {
                   <th className="px-4 py-3">Descripción</th>
                   <th className="px-4 py-3 text-center">Prioridad</th>
                   <th className="px-4 py-3 text-center">Estado</th>
+                  <th className="px-4 py-3 text-center">Asignado a</th>
                   <th className="px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -277,6 +330,9 @@ export default function Tasks() {
                       >
                         {t.status.toUpperCase()}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {t.assignedTo ? `${t.assignedTo.name}` : "—"}
                     </td>
                     <td className="px-4 py-3 text-center relative z-50">
                       <TaskActionsMenu

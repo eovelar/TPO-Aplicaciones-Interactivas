@@ -30,7 +30,8 @@ export const taskSchema: ObjectSchema = Joi.object({
     "date.greater": "La fecha límite debe ser en el futuro",
   }),
 
-  userId: Joi.number().optional().messages({
+  // 👇 este es el campo correcto que manda el frontend
+  assignedToId: Joi.number().allow(null).optional().messages({
     "number.base": "El ID del usuario asignado debe ser un número",
   }),
 });

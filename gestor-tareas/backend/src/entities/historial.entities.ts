@@ -16,7 +16,7 @@ export type AccionHistorial =
   | "LOGIN"
   | "LOGOUT";
 
-@Entity({ name: "historial" })
+@Entity({ name: "Historial" })
 export class Historial {
   @PrimaryGeneratedColumn()
   id!: number;

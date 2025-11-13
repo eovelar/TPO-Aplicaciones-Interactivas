@@ -1,8 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
 import { User } from "./User";
 import { Team } from "./Team";
 
-@Entity()
+@Entity("task")
 export class Task {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -19,11 +25,29 @@ export class Task {
   @Column({ default: "media" })
   priority!: string;
 
-  // Relación: muchas tareas pertenecen a un usuario
-  @ManyToOne(() => User, (user) => user.tasks, { onDelete: "CASCADE" })
+  // 🔹 Usuario que creó la tarea
+  @ManyToOne(() => User, (user) => user.tasks, {
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  })
+  @JoinColumn({ name: "userId" })
   user!: User;
 
-  // Relación: muchas tareas pertenecen a un equipo
-  @ManyToOne(() => Team, (team) => team.tasks, { onDelete: "CASCADE" })
-  team!: Team;
+  // 🔹 Usuario asignado (responsable de realizarla)
+  @ManyToOne(() => User, (user) => user.assignedTasks, {
+    nullable: true,
+    onDelete: "SET NULL",
+    onUpdate: "CASCADE",
+  })
+  @JoinColumn({ name: "assigned_to_id" })
+  assignedTo?: User | null;
+
+  // 🔹 Equipo al que pertenece la tarea (opcional)
+  @ManyToOne(() => Team, (team) => team.tasks, {
+    nullable: true,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  })
+  @JoinColumn({ name: "teamId" })
+  team?: Team | null;
 }

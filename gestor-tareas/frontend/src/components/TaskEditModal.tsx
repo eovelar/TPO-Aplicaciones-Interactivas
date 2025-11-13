@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../api/http";
+import { useUser } from "../context/UserContext";
 
 interface Task {
-  id?: number; // ← ahora es opcional (para nuevas tareas)
+  id?: number;
   title: string;
   description: string;
   priority: "alta" | "media" | "baja";
   status: string;
+  assignedToId?: number | null;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
 }
 
 interface TaskEditModalProps {
@@ -14,19 +23,56 @@ interface TaskEditModalProps {
   onSave: (updatedTask: Task) => void;
 }
 
-export default function TaskEditModal({ task, onClose, onSave }: TaskEditModalProps) {
-  const [editedTask, setEditedTask] = useState<Task>({ ...task });
+export default function TaskEditModal({
+  task,
+  onClose,
+  onSave,
+}: TaskEditModalProps) {
+  const { user } = useUser();
+  const [editedTask, setEditedTask] = useState<Task>({
+    ...task,
+    assignedToId:
+      task.assignedToId !== undefined
+        ? task.assignedToId
+        : (task as any).assignedTo?.id || null,
+  });
+  const [users, setUsers] = useState<User[]>([]);
 
+  // 🔹 Cargar usuarios (solo si el actual es propietario)
+  useEffect(() => {
+    if (user?.role === "propietario") {
+      api
+        .get("/users", {
+          headers: {
+            "x-user-id": String(user.id),
+            "x-user-role": user.role,
+            "x-user-email": user.email,
+          },
+        })
+        .then((res) => setUsers(res.data))
+        .catch((err) => console.error("Error al cargar usuarios:", err));
+    }
+  }, [user]);
+
+  // 🔹 Manejar cambios de texto / selects comunes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
-    setEditedTask((prev) => ({ ...prev, [name]: value }));
+    setEditedTask((prev) => ({
+      ...prev,
+      [name]: name === "assignedToId" ? (value ? Number(value) : null) : value,
+    }));
   };
 
+  // 🔹 Guardar cambios
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editedTask.title.trim()) return alert("El título es obligatorio");
+
+    console.log("📦 Payload enviado:", editedTask); // 👀
     onSave(editedTask);
   };
 
@@ -38,6 +84,7 @@ export default function TaskEditModal({ task, onClose, onSave }: TaskEditModalPr
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Título */}
           <input
             name="title"
             type="text"
@@ -48,6 +95,7 @@ export default function TaskEditModal({ task, onClose, onSave }: TaskEditModalPr
             required
           />
 
+          {/* Descripción */}
           <textarea
             name="description"
             placeholder="Descripción"
@@ -56,6 +104,7 @@ export default function TaskEditModal({ task, onClose, onSave }: TaskEditModalPr
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm h-24 resize-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
           />
 
+          {/* Prioridad + Estado */}
           <div className="flex gap-3">
             <select
               name="priority"
@@ -80,6 +129,29 @@ export default function TaskEditModal({ task, onClose, onSave }: TaskEditModalPr
             </select>
           </div>
 
+          {/* Asignar a usuario (solo propietario) */}
+          {user?.role === "propietario" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Asignar a usuario:
+              </label>
+              <select
+                name="assignedToId"
+                value={editedTask.assignedToId || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              >
+                <option value="">-- Sin asignar --</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Botones */}
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"

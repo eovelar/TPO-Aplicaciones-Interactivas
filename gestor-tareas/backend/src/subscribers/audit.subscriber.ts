@@ -1,4 +1,3 @@
-// src/subscribers/audit.subscriber.ts
 import {
   EntitySubscriberInterface,
   EventSubscriber,
@@ -6,7 +5,7 @@ import {
   UpdateEvent,
   RemoveEvent,
 } from "typeorm";
-import { Historial } from "../entities/historial.entities";
+import { Historial } from "../entities/Historial.entities";
 import { RequestContext } from "../utils/request-context";
 
 /** Nombre de entidad desde el target */
@@ -15,7 +14,10 @@ function entityNameFromTarget(target: any): string {
 }
 
 /** Toma un snapshot plano (solo columnas mapeadas por TypeORM, sin relaciones) */
-function snapshotColumns(event: InsertEvent<any> | UpdateEvent<any> | RemoveEvent<any>, source: any) {
+function snapshotColumns(
+  event: InsertEvent<any> | UpdateEvent<any> | RemoveEvent<any>,
+  source: any
+) {
   if (!source) return null;
   const cols = event.metadata.columns.map((c) => c.propertyName);
   const snap: Record<string, any> = {};
@@ -27,21 +29,25 @@ function snapshotColumns(event: InsertEvent<any> | UpdateEvent<any> | RemoveEven
 function computeDiff(before: any, after: any) {
   const ignore = new Set(["updatedAt", "createdAt", "password"]);
   const changed: Record<string, { antes: any; despues: any }> = {};
-  const keys = new Set([...(before ? Object.keys(before) : []), ...(after ? Object.keys(after) : [])]);
+  const keys = new Set([
+    ...(before ? Object.keys(before) : []),
+    ...(after ? Object.keys(after) : []),
+  ]);
   for (const k of keys) {
     if (ignore.has(k)) continue;
     const prev = before?.[k];
     const next = after?.[k];
     // comparación segura (primitivos y Date → ISO)
     const norm = (v: any) => (v instanceof Date ? v.toISOString() : v);
-    if (norm(prev) !== norm(next)) changed[k] = { antes: norm(prev), despues: norm(next) };
+    if (norm(prev) !== norm(next))
+      changed[k] = { antes: norm(prev), despues: norm(next) };
   }
   return changed;
 }
 
 @EventSubscriber()
 export class AuditSubscriber implements EntitySubscriberInterface {
-  // Importante: NO registrar el subscriber manualmente en el constructor.
+  // Importante: NO registrar manualmente en constructor.
   // Se carga desde data-source.ts con `subscribers: [AuditSubscriber]`.
 
   private beforeStates = new WeakMap<object, any>();
@@ -70,7 +76,6 @@ export class AuditSubscriber implements EntitySubscriberInterface {
 
   beforeUpdate(event: UpdateEvent<any>) {
     if (event.databaseEntity) {
-      // guardamos snapshot "antes"
       const before = snapshotColumns(event, event.databaseEntity);
       this.beforeStates.set(event.entity ?? {}, before);
     }
@@ -85,7 +90,9 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     const usuarioId = RequestContext.getUserId() ?? 0;
     if (!entidadId) return;
 
-    const before = this.beforeStates.get(event.entity ?? {}) ?? snapshotColumns(event, event.databaseEntity);
+    const before =
+      this.beforeStates.get(event.entity ?? {}) ??
+      snapshotColumns(event, event.databaseEntity);
     const after = snapshotColumns(event, event.entity);
     const diff = computeDiff(before, after);
     if (!diff || !Object.keys(diff).length) return;
@@ -111,7 +118,10 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     const usuarioId = RequestContext.getUserId() ?? 0;
     if (!entidadId) return;
 
-    const previo = snapshotColumns(event, event.databaseEntity ?? event.entity);
+    const previo = snapshotColumns(
+      event,
+      event.databaseEntity ?? event.entity
+    );
     await repo.save(
       repo.create({
         entidad,
