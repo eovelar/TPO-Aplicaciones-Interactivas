@@ -21,11 +21,11 @@ export class Team {
   @Column({ nullable: true })
   description!: string;
 
-  // 🔹 Relación: un equipo tiene un propietario (usuario con rol "propietario")
+  // Relación: un equipo tiene un propietario (usuario con rol "propietario")
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   owner!: User;
 
-  // 🔹 Relación: un equipo tiene muchos miembros (usuarios)
+  // Relación: un equipo tiene muchos miembros (usuarios)
   @ManyToMany(() => User)
   @JoinTable({
     name: "team_members", // tabla intermedia explícita
@@ -34,7 +34,7 @@ export class Team {
   })
   members!: User[];
 
-  // 🔹 Relación: un equipo tiene muchas tareas
+  // Relación: un equipo tiene muchas tareas
   @OneToMany(() => Task, (task) => task.team)
   tasks!: Task[];
 }

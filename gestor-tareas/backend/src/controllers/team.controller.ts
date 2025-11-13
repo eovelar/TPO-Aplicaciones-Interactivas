@@ -8,7 +8,7 @@ import { prettyJson } from "../utils/response";
 const teamRepo = AppDataSource.getRepository(Team);
 const userRepo = AppDataSource.getRepository(User);
 
-// 🔹 Crear un equipo → solo propietario
+// Crear un equipo → solo propietario
 export const createTeam = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -43,7 +43,7 @@ export const createTeam = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Listar equipos
+// Listar equipos
 export const getTeams = async (req: Request, res: Response) => {
   try {
     let teams;
@@ -69,7 +69,7 @@ export const getTeams = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Actualizar equipo → solo propietario
+// Actualizar equipo → solo propietario
 export const updateTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -97,7 +97,7 @@ export const updateTeam = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Añadir miembro
+// Añadir miembro
 export const addMember = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -132,7 +132,7 @@ export const addMember = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Quitar miembro
+// Quitar miembro
 export const removeMember = async (req: Request, res: Response) => {
   try {
     const { id, userId } = req.params;
@@ -163,7 +163,7 @@ export const removeMember = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Eliminar equipo
+// Eliminar equipo
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -188,14 +188,13 @@ export const deleteTeam = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Invitar usuario a un equipo → solo propietario
+// Invitar usuario a un equipo → solo propietario
 export const inviteToTeam = async (req: Request, res: Response) => {
   try {
     const teamId = Number(req.params.id);
     const { email } = req.body;
 
-    // 👇 AGREGADO PARA VER QUÉ LLEGA DEL FRONT
-    console.log("🔍 EMAIL RECIBIDO EN BACKEND:", email);
+    console.log("EMAIL RECIBIDO EN BACKEND:", email);
 
     if (!email) {
       return prettyJson(res, { message: "El email es obligatorio" }, 400);
@@ -230,7 +229,7 @@ export const inviteToTeam = async (req: Request, res: Response) => {
     await teamRepo.save(team);
 
     return prettyJson(res, {
-      message: `✅ Usuario ${user.email} agregado correctamente al equipo ${team.name}`,
+      message: `Usuario ${user.email} agregado correctamente al equipo ${team.name}`,
       team,
     });
   } catch (error) {

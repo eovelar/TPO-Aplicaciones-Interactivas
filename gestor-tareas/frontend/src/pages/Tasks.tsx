@@ -44,9 +44,7 @@ export default function Tasks() {
     assignedTo: null,
   });
 
-  // ==============================
-  // 🔹 Cargar tareas
-  // ==============================
+  // Cargar tareas
   const fetchTasks = async () => {
     if (!user) return;
     try {
@@ -70,9 +68,7 @@ export default function Tasks() {
     fetchTasks();
   }, [user]);
 
-  // ==============================
-  // 🔹 Filtrado dinámico
-  // ==============================
+  // Filtrado dinámico
   useEffect(() => {
     let filtered = [...tasks];
     if (filterStatus !== "todos")
@@ -92,9 +88,7 @@ export default function Tasks() {
     setFilteredTasks(filtered);
   }, [filterStatus, filterPriority, searchQuery, tasks]);
 
-  // ==============================
-  // 🔹 Crear tarea
-  // ==============================
+  // Crear tarea
   const handleCreateTask = async (taskData: Task) => {
     if (!taskData.title.trim()) return alert("El título es obligatorio");
     if (!taskData.fecha_limite) return alert("La fecha límite es obligatoria");
@@ -131,9 +125,7 @@ export default function Tasks() {
     }
   };
 
-  // ==============================
-  // 🔹 Completar tarea
-  // ==============================
+  //  Completar tarea
   const handleCompleteTask = async (task: Task) => {
     try {
       await api.put(
@@ -161,9 +153,8 @@ export default function Tasks() {
     }
   };
 
-  // ==============================
-  // 🔹 Guardar edición
-  // ==============================
+  //  Guardar edición
+
   const handleSaveEdit = async (updated: any) => {
     if (!updated || !updated.title) return;
 
@@ -200,9 +191,7 @@ export default function Tasks() {
     }
   };
 
-  // ==============================
-  // 🔹 Eliminar tarea
-  // ==============================
+  //  Eliminar tarea
   const handleDeleteTask = async (taskId?: number) => {
     if (!taskId) return;
     if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
@@ -221,9 +210,8 @@ export default function Tasks() {
     }
   };
 
-  // ==============================
-  // 🔹 Helpers visuales
-  // ==============================
+  //  Helpers visuales
+
   const getPriorityStyle = (priority: Task["priority"]) => {
     switch (priority) {
       case "alta":
@@ -252,16 +240,12 @@ export default function Tasks() {
     return date.toLocaleDateString("es-AR");
   };
 
-  // ============================================
-  // 🔹 MIS TAREAS / TODAS
-  // ============================================
+  //  MIS TAREAS / TODAS
   const visibleTasks = showOnlyMine
     ? filteredTasks.filter((t) => t.assignedTo?.id === user?.id)
     : filteredTasks;
 
-  // ==============================
-  // 🔹 Render principal
-  // ==============================
+  //  Render principal
   if (loading)
     return <p className="text-center mt-10 text-gray-600">Cargando tareas...</p>;
   if (!user)

@@ -19,9 +19,7 @@ export default function Teams() {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
 
-  // =====================
-  // 🔹 Cargar equipos
-  // =====================
+  // Cargar equipos
   const fetchTeams = async () => {
     try {
       const res = await api.get("/teams", {
@@ -40,9 +38,7 @@ export default function Teams() {
     fetchTeams();
   }, []);
 
-  // =====================
-  // 🔹 Crear equipo
-  // =====================
+  //  Crear equipo
   const createTeam = async () => {
     if (!newTeamName.trim()) return alert("El nombre es obligatorio");
 
@@ -69,9 +65,7 @@ export default function Teams() {
     }
   };
 
-  // =====================
-  // 🔹 Eliminar equipo
-  // =====================
+  //  Eliminar equipo
   const deleteTeam = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este equipo?")) return;
 

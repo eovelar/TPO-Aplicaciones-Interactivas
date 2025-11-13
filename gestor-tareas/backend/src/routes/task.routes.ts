@@ -17,7 +17,7 @@ router.get("/", simpleAuth, getTasks);
 // Crear tarea → propietario o miembro autenticado
 router.post("/", simpleAuth, validate(taskSchema), createTask);
 
-// 🔹 Actualizar tarea → propietario o miembro autenticado
+// Actualizar tarea → propietario o miembro autenticado
 router.put("/:id", simpleAuth, validate(taskSchema), updateTask);
 
 // Eliminar tarea → solo propietario

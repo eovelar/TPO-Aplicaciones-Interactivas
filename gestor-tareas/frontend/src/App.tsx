@@ -18,11 +18,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* 🔹 Páginas públicas */}
+        {/* Páginas públicas */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* 🔹 Dashboard: rutas protegidas */}
+        {/* Dashboard: rutas protegidas */}
         <Route
           path="/tasks"
           element={
@@ -45,7 +45,7 @@ export default function App() {
           }
         />
 
-        {/* 🔹 NUEVA RUTA: detalles del equipo */}
+        {/* NUEVA RUTA: detalles del equipo */}
         <Route
           path="/teams/:id"
           element={

@@ -4,7 +4,7 @@ import { User } from "../entities/User";
 
 const userRepo = AppDataSource.getRepository(User);
 
-// 🔹 Registro de usuario
+// Registro de usuario
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role } = req.body;
@@ -34,7 +34,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Login de usuario (sin JWT, usando headers)
+// Login de usuario (sin JWT, usando headers)
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -66,7 +66,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Eliminar usuario → solo propietario
+// Eliminar usuario → solo propietario
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {

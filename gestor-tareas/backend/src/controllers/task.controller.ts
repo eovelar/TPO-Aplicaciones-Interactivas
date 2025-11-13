@@ -8,7 +8,7 @@ const taskRepository = AppDataSource.getRepository(Task);
 const userRepository = AppDataSource.getRepository(User);
 const historialRepository = AppDataSource.getRepository(Historial);
 
-// 🔹 Obtener todas las tareas (todos los usuarios pueden ver todas)
+// Obtener todas las tareas (todos los usuarios pueden ver todas)
 export const getTasks = async (req: Request, res: Response) => {
   try {
     const tasks = await taskRepository.find({
@@ -23,7 +23,7 @@ export const getTasks = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Crear nueva tarea
+// Crear nueva tarea
 export const createTask = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.headers["x-user-id"]);
@@ -33,7 +33,7 @@ export const createTask = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "El título es obligatorio" });
     }
 
-    // 🔸 Validar fecha límite
+    // Validar fecha límite
     if (!fecha_limite) {
       return res.status(400).json({ message: "La fecha límite es obligatoria" });
     }
@@ -87,14 +87,14 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Actualizar tarea (incluye validación de fecha límite)
+// Actualizar tarea (incluye validación de fecha límite)
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = Number(req.headers["x-user-id"]);
     const { title, description, priority, status, assignedToId, fecha_limite } = req.body;
 
-    console.log("📩 BODY recibido:", req.body);
+    console.log("BODY recibido:", req.body);
 
     const existing = await taskRepository.findOne({
       where: { id: Number(id) },
@@ -105,7 +105,7 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const prev = { ...existing };
 
-    // 🔸 Validar fecha límite (si se pasa)
+    // Validar fecha límite (si se pasa)
     if (fecha_limite) {
       const limite = new Date(fecha_limite);
       const hoy = new Date();
@@ -115,14 +115,14 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
-    // 🔸 Campos básicos
+    // Campos básicos
     const newTitle = title ?? existing.title;
     const newDescription = description ?? existing.description;
     const newPriority = priority ?? existing.priority;
     const newStatus = status ?? existing.status;
     const newFechaLimite = fecha_limite ?? existing.fecha_limite;
 
-    // 🔸 Asignado
+    // Asignado
     const assignedId = assignedToId ? Number(assignedToId) : null;
     let newAssignedUser = existing.user;
 
@@ -135,7 +135,7 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
-    // 🔸 Actualizar en BD
+    // Actualizar en BD
     await AppDataSource.query(
       `
       UPDATE task
@@ -198,7 +198,7 @@ export const updateTask = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 Eliminar tarea
+// Eliminar tarea
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
