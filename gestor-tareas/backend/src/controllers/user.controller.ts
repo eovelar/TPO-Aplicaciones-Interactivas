@@ -1,21 +1,51 @@
 import { AppDataSource } from "../config/data-source";
+import { Like } from "typeorm";
 import { User } from "../entities/User";
 import { Request, Response } from "express";
 import { prettyJson } from "../utils/response";
+import { getPagination } from "../utils/pagination"; 
 
 const userRepo = AppDataSource.getRepository(User);
 
-// Listar todos los usuarios → solo propietario
+// Listar todos los usuarios → solo propietario (con paginación + filtros)
 export const getUsers = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
       return prettyJson(res, { message: "Solo propietarios pueden ver usuarios" }, 403);
     }
 
-    const users = await userRepo.find({
-      select: ["id", "name", "email", "role"], // seguridad: no devolver contraseñas
+    const { page, limit, skip } = getPagination(req.query);
+
+    // Filtros opcionales
+    const { role, search } = req.query;
+
+    const where: any = {};
+
+    if (role && role !== "todos") {
+      where.role = role;
+    }
+
+    if (search) {
+      where.name = Like(`%${search}%`);
+    }
+
+    const [users, total] = await userRepo.findAndCount({
+      where,
+      select: ["id", "name", "email", "role"],
+      order: { id: "ASC" },
+      skip,
+      take: limit,
     });
-    return prettyJson(res, users);
+
+    return prettyJson(res, {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     return prettyJson(
       res,

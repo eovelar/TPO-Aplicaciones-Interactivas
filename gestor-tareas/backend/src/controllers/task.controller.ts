@@ -1,22 +1,66 @@
 import { Request, Response } from "express";
+import { Like } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { Task } from "../entities/Task";
 import { User } from "../entities/User";
 import { Historial } from "../entities/Historial.entities";
+import { getPagination } from "../utils/pagination"; // ⬅️ agregado
 
 const taskRepository = AppDataSource.getRepository(Task);
 const userRepository = AppDataSource.getRepository(User);
 const historialRepository = AppDataSource.getRepository(Historial);
 
-// Obtener todas las tareas (todos los usuarios pueden ver todas)
+// Obtener todas las tareas → ahora con paginación + filtros
 export const getTasks = async (req: Request, res: Response) => {
   try {
-    const tasks = await taskRepository.find({
+    const userId = Number(req.headers["x-user-id"]);
+    const userRole = String(req.headers["x-user-role"]);
+
+    if (!userId || !userRole) {
+      return res.status(400).json({ message: "Faltan datos del usuario autenticado" });
+    }
+
+    const { page, limit, skip } = getPagination(req.query);
+
+    // Filtros opcionales
+    const { status, priority, search } = req.query;
+
+    const where: any = {};
+
+    // Si NO es propietario → solo ve tareas asignadas a él
+    if (userRole !== "propietario") {
+      where.assignedTo = { id: userId };
+    }
+
+    if (status && status !== "todos") {
+      where.status = status;
+    }
+
+    if (priority && priority !== "todas") {
+      where.priority = priority;
+    }
+
+    if (search) {
+      where.title = Like(`%${search}%`);
+    }
+
+    const [tasks, total] = await taskRepository.findAndCount({
+      where,
       relations: ["user", "assignedTo"],
       order: { id: "DESC" },
+      skip,
+      take: limit,
     });
 
-    return res.status(200).json(tasks);
+    return res.status(200).json({
+      data: tasks,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error al obtener tareas:", error);
     return res.status(500).json({ message: "Error interno al listar tareas" });
@@ -33,7 +77,6 @@ export const createTask = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "El título es obligatorio" });
     }
 
-    // Validar fecha límite
     if (!fecha_limite) {
       return res.status(400).json({ message: "La fecha límite es obligatoria" });
     }
@@ -87,7 +130,7 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-// Actualizar tarea (incluye validación de fecha límite)
+// Actualizar tarea (incluye validación)
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -105,7 +148,6 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const prev = { ...existing };
 
-    // Validar fecha límite (si se pasa)
     if (fecha_limite) {
       const limite = new Date(fecha_limite);
       const hoy = new Date();
@@ -115,14 +157,12 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
-    // Campos básicos
     const newTitle = title ?? existing.title;
     const newDescription = description ?? existing.description;
     const newPriority = priority ?? existing.priority;
     const newStatus = status ?? existing.status;
     const newFechaLimite = fecha_limite ?? existing.fecha_limite;
 
-    // Asignado
     const assignedId = assignedToId ? Number(assignedToId) : null;
     let newAssignedUser = existing.user;
 
@@ -135,7 +175,6 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
-    // Actualizar en BD
     await AppDataSource.query(
       `
       UPDATE task
