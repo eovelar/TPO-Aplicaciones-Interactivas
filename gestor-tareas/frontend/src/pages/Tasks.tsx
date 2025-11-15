@@ -44,9 +44,22 @@ export default function Tasks() {
     assignedTo: null,
   });
 
-  // Cargar tareas
+  // PAGINACIÓN
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  });
+
+  // ----------------------------------------------------------
+  // Cargar tareas desde backend (maneja ambos formatos: array o {data, meta})
+  // ----------------------------------------------------------
   const fetchTasks = async () => {
     if (!user) return;
+
     try {
       const res = await api.get("/tasks", {
         headers: {
@@ -54,9 +67,32 @@ export default function Tasks() {
           "x-user-role": user.role,
           "x-user-email": user.email,
         },
+        params: {
+          page,
+          limit,
+          status: filterStatus,
+          priority: filterPriority,
+          search: searchQuery,
+        },
       });
-      setTasks(res.data);
-      setFilteredTasks(res.data);
+
+      // Soporta backend devolviendo ARRAY DIRECTO
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data ?? [];
+
+      // Meta opcional
+      const metaInfo = res.data?.meta ?? {
+        total: data.length,
+        page: 1,
+        limit: data.length,
+        totalPages: 1,
+      };
+
+      setTasks(data);
+      setFilteredTasks(data);
+      setMeta(metaInfo);
+
     } catch (err) {
       console.error("Error al cargar tareas:", err);
     } finally {
@@ -68,15 +104,26 @@ export default function Tasks() {
     fetchTasks();
   }, [user]);
 
-  // Filtrado dinámico
+  useEffect(() => {
+    if (user) fetchTasks();
+  }, [page, filterStatus, filterPriority, searchQuery]);
+
+  // ----------------------------------------------------------
+  // Filtrado local
+  // ----------------------------------------------------------
   useEffect(() => {
     let filtered = [...tasks];
-    if (filterStatus !== "todos")
+
+    if (filterStatus !== "todos") {
       filtered = filtered.filter((t) =>
         t.status.toLowerCase().includes(filterStatus)
       );
-    if (filterPriority !== "todas")
+    }
+
+    if (filterPriority !== "todas") {
       filtered = filtered.filter((t) => t.priority === filterPriority);
+    }
+
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -85,10 +132,13 @@ export default function Tasks() {
           t.description.toLowerCase().includes(q)
       );
     }
+
     setFilteredTasks(filtered);
   }, [filterStatus, filterPriority, searchQuery, tasks]);
 
+  // ----------------------------------------------------------
   // Crear tarea
+  // ----------------------------------------------------------
   const handleCreateTask = async (taskData: Task) => {
     if (!taskData.title.trim()) return alert("El título es obligatorio");
     if (!taskData.fecha_limite) return alert("La fecha límite es obligatoria");
@@ -125,7 +175,9 @@ export default function Tasks() {
     }
   };
 
-  //  Completar tarea
+  // ----------------------------------------------------------
+  // Completar tarea
+  // ----------------------------------------------------------
   const handleCompleteTask = async (task: Task) => {
     try {
       await api.put(
@@ -146,6 +198,7 @@ export default function Tasks() {
           },
         }
       );
+
       await fetchTasks();
     } catch (err) {
       console.error("❌ Error al completar tarea:", err);
@@ -153,9 +206,10 @@ export default function Tasks() {
     }
   };
 
-  //  Guardar edición
-
-  const handleSaveEdit = async (updated: any) => {
+  // ----------------------------------------------------------
+  // Guardar edición
+  // ----------------------------------------------------------
+  const handleSaveEdit = async (updated: Task) => {
     if (!updated || !updated.title) return;
 
     try {
@@ -191,10 +245,13 @@ export default function Tasks() {
     }
   };
 
-  //  Eliminar tarea
+  // ----------------------------------------------------------
+  // Eliminar
+  // ----------------------------------------------------------
   const handleDeleteTask = async (taskId?: number) => {
     if (!taskId) return;
     if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
+
     try {
       await api.delete(`/tasks/${taskId}`, {
         headers: {
@@ -203,6 +260,7 @@ export default function Tasks() {
           "x-user-email": user?.email,
         },
       });
+
       await fetchTasks();
     } catch (err) {
       console.error("Error al eliminar la tarea:", err);
@@ -210,8 +268,9 @@ export default function Tasks() {
     }
   };
 
-  //  Helpers visuales
-
+  // ----------------------------------------------------------
+  // Helpers visuales
+  // ----------------------------------------------------------
   const getPriorityStyle = (priority: Task["priority"]) => {
     switch (priority) {
       case "alta":
@@ -240,14 +299,16 @@ export default function Tasks() {
     return date.toLocaleDateString("es-AR");
   };
 
-  //  MIS TAREAS / TODAS
   const visibleTasks = showOnlyMine
     ? filteredTasks.filter((t) => t.assignedTo?.id === user?.id)
     : filteredTasks;
 
-  //  Render principal
+  // ----------------------------------------------------------
+  // Render
+  // ----------------------------------------------------------
   if (loading)
     return <p className="text-center mt-10 text-gray-600">Cargando tareas...</p>;
+
   if (!user)
     return <p className="text-center mt-10 text-gray-600">No estás autenticado.</p>;
 
@@ -296,12 +357,18 @@ export default function Tasks() {
             type="text"
             placeholder="Buscar..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setSearchQuery(e.target.value);
+            }}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-72 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
           />
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setFilterStatus(e.target.value);
+            }}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
           >
             <option value="todos">Todos los estados</option>
@@ -311,7 +378,10 @@ export default function Tasks() {
           </select>
           <select
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setFilterPriority(e.target.value);
+            }}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
           >
             <option value="todas">Todas las prioridades</option>
@@ -373,7 +443,6 @@ export default function Tasks() {
                         {formatDate(t.fecha_limite)}
                       </td>
                       <td className="px-3 py-3 text-center relative z-50">
-                        {/* ⛔ Se quita el disabled para permitir acciones en completadas */}
                         <TaskActionsMenu
                           onEdit={() => setEditTask(t)}
                           onComplete={() => handleCompleteTask(t)}
@@ -387,6 +456,29 @@ export default function Tasks() {
             </div>
           </div>
         )}
+
+        {/* PAGINACIÓN */}
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+          >
+            Anterior
+          </button>
+
+          <span className="text-sm text-gray-600">
+            Página {meta.page} de {meta.totalPages}
+          </span>
+
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, meta.totalPages))}
+            disabled={page === meta.totalPages}
+            className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
 
       {/* MODALES */}
@@ -397,6 +489,7 @@ export default function Tasks() {
           onSave={handleCreateTask}
         />
       )}
+
       {editTask && (
         <TaskEditModal
           task={editTask}

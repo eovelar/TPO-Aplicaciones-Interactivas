@@ -4,55 +4,50 @@ import { AppDataSource } from "../config/data-source";
 import { Task } from "../entities/Task";
 import { User } from "../entities/User";
 import { Historial } from "../entities/Historial.entities";
-import { getPagination } from "../utils/pagination"; // ⬅️ agregado
+import { getPagination } from "../utils/pagination";
 
 const taskRepository = AppDataSource.getRepository(Task);
 const userRepository = AppDataSource.getRepository(User);
 const historialRepository = AppDataSource.getRepository(Historial);
 
-// Obtener todas las tareas → ahora con paginación + filtros
+/* ============================================
+   GET TASKS — LISTADO + PAGINACIÓN + FILTROS
+   ============================================ */
 export const getTasks = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.headers["x-user-id"]);
     const userRole = String(req.headers["x-user-role"]);
 
     if (!userId || !userRole) {
-      return res.status(400).json({ message: "Faltan datos del usuario autenticado" });
+      return res.status(400).json({
+        message: "Faltan encabezados de autenticación: x-user-id y x-user-role",
+      });
     }
 
     const { page, limit, skip } = getPagination(req.query);
 
-    // Filtros opcionales
     const { status, priority, search } = req.query;
 
     const where: any = {};
 
-    // Si NO es propietario → solo ve tareas asignadas a él
+    // 🚫 Si NO es propietario → solo ve tareas asignadas a él
     if (userRole !== "propietario") {
       where.assignedTo = { id: userId };
     }
 
-    if (status && status !== "todos") {
-      where.status = status;
-    }
-
-    if (priority && priority !== "todas") {
-      where.priority = priority;
-    }
-
-    if (search) {
-      where.title = Like(`%${search}%`);
-    }
+    if (status && status !== "todos") where.status = status;
+    if (priority && priority !== "todas") where.priority = priority;
+    if (search) where.title = Like(`%${search}%`);
 
     const [tasks, total] = await taskRepository.findAndCount({
       where,
       relations: ["user", "assignedTo"],
-      order: { id: "DESC" },
+      order: { createdAt: "DESC" },
       skip,
       take: limit,
     });
 
-    return res.status(200).json({
+    return res.json({
       data: tasks,
       meta: {
         total,
@@ -67,19 +62,16 @@ export const getTasks = async (req: Request, res: Response) => {
   }
 };
 
-// Crear nueva tarea
+/* ============================================
+   CREATE TASK
+   ============================================ */
 export const createTask = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.headers["x-user-id"]);
     const { title, description, priority, status, assignedToId, fecha_limite } = req.body;
 
-    if (!title?.trim()) {
-      return res.status(400).json({ message: "El título es obligatorio" });
-    }
-
-    if (!fecha_limite) {
-      return res.status(400).json({ message: "La fecha límite es obligatoria" });
-    }
+    if (!title?.trim()) return res.status(400).json({ message: "El título es obligatorio" });
+    if (!fecha_limite) return res.status(400).json({ message: "La fecha límite es obligatoria" });
 
     const limite = new Date(fecha_limite);
     const hoy = new Date();
@@ -123,21 +115,24 @@ export const createTask = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(201).json({ message: "Tarea creada correctamente ✅", task: newTask });
+    return res.status(201).json({
+      message: "Tarea creada correctamente ✅",
+      task: newTask,
+    });
   } catch (error) {
     console.error("Error al crear tarea:", error);
     return res.status(500).json({ message: "Error interno al crear tarea" });
   }
 };
 
-// Actualizar tarea (incluye validación)
+/* ============================================
+   UPDATE TASK
+   ============================================ */
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = Number(req.headers["x-user-id"]);
     const { title, description, priority, status, assignedToId, fecha_limite } = req.body;
-
-    console.log("BODY recibido:", req.body);
 
     const existing = await taskRepository.findOne({
       where: { id: Number(id) },
@@ -157,22 +152,13 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
-    const newTitle = title ?? existing.title;
-    const newDescription = description ?? existing.description;
-    const newPriority = priority ?? existing.priority;
-    const newStatus = status ?? existing.status;
-    const newFechaLimite = fecha_limite ?? existing.fecha_limite;
+    const newAssignedId = assignedToId ? Number(assignedToId) : null;
+    let newAssignedUser = existing.assignedTo;
 
-    const assignedId = assignedToId ? Number(assignedToId) : null;
-    let newAssignedUser = existing.user;
-
-    if (assignedId && !isNaN(assignedId)) {
-      const found = await userRepository.findOneBy({ id: assignedId });
-      if (found) {
-        newAssignedUser = found;
-      } else {
-        return res.status(400).json({ message: "Usuario asignado no encontrado" });
-      }
+    if (newAssignedId && !isNaN(newAssignedId)) {
+      const found = await userRepository.findOneBy({ id: newAssignedId });
+      if (!found) return res.status(400).json({ message: "Usuario asignado no existe" });
+      newAssignedUser = found;
     }
 
     await AppDataSource.query(
@@ -189,12 +175,12 @@ export const updateTask = async (req: Request, res: Response) => {
       WHERE id = $7
       `,
       [
-        newTitle,
-        newDescription,
-        newPriority,
-        newStatus,
-        newFechaLimite,
-        newAssignedUser.id,
+        title ?? existing.title,
+        description ?? existing.description,
+        priority ?? existing.priority,
+        status ?? existing.status,
+        fecha_limite ?? existing.fecha_limite,
+        newAssignedUser?.id ?? null,
         Number(id),
       ]
     );
@@ -213,10 +199,10 @@ export const updateTask = async (req: Request, res: Response) => {
           assignedTo: prev.assignedTo?.name || null,
         },
         despues: {
-          title: newTitle,
-          status: newStatus,
-          priority: newPriority,
-          fecha_limite: newFechaLimite,
+          title: title ?? existing.title,
+          status: status ?? existing.status,
+          priority: priority ?? existing.priority,
+          fecha_limite: fecha_limite ?? existing.fecha_limite,
           assignedTo: newAssignedUser?.name || null,
         },
       },
@@ -227,17 +213,19 @@ export const updateTask = async (req: Request, res: Response) => {
       relations: ["assignedTo", "user"],
     });
 
-    return res.status(200).json({
+    return res.json({
       message: "Tarea actualizada correctamente ✅",
       task: updatedTask,
     });
   } catch (error) {
-    console.error("💥 Error en updateTask:", error);
+    console.error("Error en updateTask:", error);
     return res.status(500).json({ message: "Error interno al actualizar tarea" });
   }
 };
 
-// Eliminar tarea
+/* ============================================
+   DELETE TASK
+   ============================================ */
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -256,7 +244,7 @@ export const deleteTask = async (req: Request, res: Response) => {
       detalles: { title: existing.title },
     });
 
-    return res.status(200).json({ message: "Tarea eliminada con éxito ✅" });
+    return res.json({ message: "Tarea eliminada con éxito ✅" });
   } catch (error) {
     console.error("Error al eliminar tarea:", error);
     return res.status(500).json({ message: "Error interno al eliminar tarea" });
