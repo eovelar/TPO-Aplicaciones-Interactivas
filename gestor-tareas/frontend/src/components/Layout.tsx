@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { useUser } from "../context/UserContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import Logo from "../assets/logo.png";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, setUser } = useUser();
   const navigate = useNavigate();
-  const location = useLocation(); // ⬅️ necesario para el highlight activo
+  const location = useLocation();
 
   const handleLogout = () => {
     setUser(null);
@@ -13,22 +14,34 @@ export default function Layout({ children }: { children: ReactNode }) {
   };
 
   const isActive = (path: string) =>
-    location.pathname === path ? "text-white underline" : "text-blue-100";
+    location.pathname === path
+      ? "text-white underline font-semibold"
+      : "text-purple-200 hover:text-white";
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800 font-inter">
-      {/* NAV SUPERIOR */}
-      <header className="bg-blue-600 text-white py-4 shadow-md">
-        <div className="max-w-6xl mx-auto flex justify-between items-center px-4">
-          {/* Logo / Título */}
-          <div
-            onClick={() => navigate("/tasks")}
-            className="text-xl sm:text-2xl font-semibold cursor-pointer hover:opacity-90 transition"
-          >
-            Focusin
-          </div>
 
-          {/* Navegación */}
+      {/* NAV SUPERIOR */}
+      <header
+        className="text-white py-4 shadow-md"
+        style={{ backgroundColor: "#7600ff" }}
+      >
+        <div className="max-w-6xl mx-auto flex justify-between items-center px-4">
+
+          {/* LOGO SOLO – proporción original */}
+          <img
+            src={Logo}
+            alt="Focusin Logo"
+            onClick={() => navigate("/tasks")}
+            className="cursor-pointer hover:opacity-90 transition"
+            style={{
+              height: "40px",   // tamaño visible ideal
+              width: "auto",    // mantiene proporción original
+              objectFit: "contain"
+            }}
+          />
+
+          {/* NAV */}
           {user && (
             <div className="flex items-center gap-4">
               <button
@@ -52,15 +65,14 @@ export default function Layout({ children }: { children: ReactNode }) {
                 Actividad
               </button>
 
-              {/* Usuario */}
-              <span className="text-sm sm:text-base font-light text-blue-100 hidden sm:block">
+              <span className="text-sm sm:text-base font-light text-purple-200 hidden sm:block">
                 {user.email}
               </span>
 
-              {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-md text-sm font-medium transition"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition"
+                style={{ backgroundColor: "#5b00c7" }}
               >
                 Cerrar sesión
               </button>
@@ -69,7 +81,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* CONTENIDO PRINCIPAL */}
+      {/* CONTENIDO */}
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>

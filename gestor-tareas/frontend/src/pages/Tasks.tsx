@@ -55,7 +55,7 @@ export default function Tasks() {
   });
 
   // ----------------------------------------------------------
-  // Cargar tareas desde backend (maneja ambos formatos: array o {data, meta})
+  // Cargar tareas
   // ----------------------------------------------------------
   const fetchTasks = async () => {
     if (!user) return;
@@ -76,12 +76,10 @@ export default function Tasks() {
         },
       });
 
-      // Soporta backend devolviendo ARRAY DIRECTO
       const data = Array.isArray(res.data)
         ? res.data
         : res.data?.data ?? [];
 
-      // Meta opcional
       const metaInfo = res.data?.meta ?? {
         total: data.length,
         page: 1,
@@ -109,7 +107,7 @@ export default function Tasks() {
   }, [page, filterStatus, filterPriority, searchQuery]);
 
   // ----------------------------------------------------------
-  // Filtrado local
+  // Filtrado
   // ----------------------------------------------------------
   useEffect(() => {
     let filtered = [...tasks];
@@ -137,7 +135,7 @@ export default function Tasks() {
   }, [filterStatus, filterPriority, searchQuery, tasks]);
 
   // ----------------------------------------------------------
-  // Crear tarea
+  // Crear
   // ----------------------------------------------------------
   const handleCreateTask = async (taskData: Task) => {
     if (!taskData.title.trim()) return alert("El título es obligatorio");
@@ -176,7 +174,7 @@ export default function Tasks() {
   };
 
   // ----------------------------------------------------------
-  // Completar tarea
+  // Completar
   // ----------------------------------------------------------
   const handleCompleteTask = async (task: Task) => {
     try {
@@ -269,7 +267,7 @@ export default function Tasks() {
   };
 
   // ----------------------------------------------------------
-  // Helpers visuales
+  // Helpers
   // ----------------------------------------------------------
   const getPriorityStyle = (priority: Task["priority"]) => {
     switch (priority) {
@@ -304,6 +302,17 @@ export default function Tasks() {
     : filteredTasks;
 
   // ----------------------------------------------------------
+  // Saludo dinámico
+  // ----------------------------------------------------------
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) return "Buenos días";
+    if (hour >= 12 && hour < 19) return "Buenas tardes";
+    return "Buenas noches";
+  };
+
+  // ----------------------------------------------------------
   // Render
   // ----------------------------------------------------------
   if (loading)
@@ -315,9 +324,16 @@ export default function Tasks() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10 py-8">
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* HEADER */}
+
+        {/* HEADER PERSONALIZADO */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h2 className="text-2xl font-semibold text-gray-800">Gestor de Tareas</h2>
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              {getGreeting()}, {user.name} 👋
+            </h2>
+            <p className="text-gray-500 mt-1">Estas son tus tareas de hoy.</p>
+          </div>
+
           <button
             onClick={() => setShowModal(true)}
             className="border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition"
