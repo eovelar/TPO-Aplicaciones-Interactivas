@@ -1,22 +1,26 @@
 import type { ReactNode } from "react";
 import { useUser } from "../context/UserContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, setUser } = useUser();
   const navigate = useNavigate();
+  const location = useLocation(); // ⬅️ necesario para el highlight activo
 
   const handleLogout = () => {
     setUser(null);
     navigate("/");
   };
 
+  const isActive = (path: string) =>
+    location.pathname === path ? "text-white underline" : "text-blue-100";
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800 font-inter">
       {/* NAV SUPERIOR */}
       <header className="bg-blue-600 text-white py-4 shadow-md">
         <div className="max-w-6xl mx-auto flex justify-between items-center px-4">
-          {/* Título principal */}
+          {/* Logo / Título */}
           <div
             onClick={() => navigate("/tasks")}
             className="text-xl sm:text-2xl font-semibold cursor-pointer hover:opacity-90 transition"
@@ -24,33 +28,36 @@ export default function Layout({ children }: { children: ReactNode }) {
             Focusin
           </div>
 
-          {/* Menú de navegación */}
+          {/* Navegación */}
           {user && (
             <div className="flex items-center gap-4">
-              {/* Botón de navegación */}
               <button
                 onClick={() => navigate("/tasks")}
-                className={`text-sm font-medium hover:underline ${
-                  location.pathname === "/tasks" ? "text-white" : "text-blue-100"
-                }`}
+                className={`text-sm font-medium hover:underline ${isActive("/tasks")}`}
               >
                 Tareas
               </button>
+
               <button
                 onClick={() => navigate("/teams")}
-                className={`text-sm font-medium hover:underline ${
-                  location.pathname === "/teams" ? "text-white" : "text-blue-100"
-                }`}
+                className={`text-sm font-medium hover:underline ${isActive("/teams")}`}
               >
                 Equipos
               </button>
 
-              {/* Info del usuario */}
+              <button
+                onClick={() => navigate("/activity")}
+                className={`text-sm font-medium hover:underline ${isActive("/activity")}`}
+              >
+                Actividad
+              </button>
+
+              {/* Usuario */}
               <span className="text-sm sm:text-base font-light text-blue-100 hidden sm:block">
                 {user.email}
               </span>
 
-              {/* Botón de cierre de sesión */}
+              {/* Logout */}
               <button
                 onClick={handleLogout}
                 className="bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-md text-sm font-medium transition"
