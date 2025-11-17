@@ -31,6 +31,16 @@ interface Team {
   owner: Member;
 }
 
+// Avatar minimalista
+const Avatar = ({ name }: { name: string }) => {
+  const letter = name ? name[0].toUpperCase() : "?";
+  return (
+    <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-sm font-semibold">
+      {letter}
+    </div>
+  );
+};
+
 export default function TeamDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -61,8 +71,7 @@ export default function TeamDetails() {
     }
   };
 
-
-  //  Cargar tareas asignadas
+  // Cargar tareas de miembros del equipo
   const fetchTasks = async () => {
     try {
       const res = await api.get("/tasks", {
@@ -92,7 +101,6 @@ export default function TeamDetails() {
   }, [team]);
 
   // Invitar miembro
-
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return alert("Ingresá un email válido");
 
@@ -119,7 +127,6 @@ export default function TeamDetails() {
   };
 
   // Quitar miembro
-
   const removeMember = async (memberId: number) => {
     if (!confirm("¿Quitar miembro del equipo?")) return;
 
@@ -139,9 +146,9 @@ export default function TeamDetails() {
     }
   };
 
-  // Render
+  // Cargando
   if (loading || !team)
-    return <p className="text-center mt-10 text-gray-500">Cargando equipo...</p>;
+    return <p className="text-center mt-10 text-gray-600">Cargando equipo...</p>;
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
@@ -150,29 +157,34 @@ export default function TeamDetails() {
         {/* VOLVER */}
         <button
           onClick={() => navigate("/teams")}
-          className="mb-6 text-purple-600 hover:underline text-sm"
+          className="mb-6 text-gray-600 hover:text-gray-800 text-sm"
         >
           ← Volver a Equipos
         </button>
 
-        {/* CABECERA */}
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">
-          Equipo: {team.name}
-        </h2>
+        {/* HEADER */}
+        <div className="bg-white p-6 border border-gray-200 shadow-sm rounded-xl mb-10">
+          <h1 className="text-3xl font-semibold text-gray-800">{team.name}</h1>
 
-        {/* DESCRIPCIÓN DEL EQUIPO */}
-        {team.description && (
-          <p className="text-gray-700 text-md mb-4 whitespace-pre-line">
-            {team.description}
+          {team.description && (
+            <p className="text-gray-700 text-sm mt-2 whitespace-pre-line">
+              {team.description}
+            </p>
+          )}
+
+          <div className="flex items-center gap-6 mt-5 text-gray-700 text-sm">
+            <span>👥 {team.members.length} miembros</span>
+            <span>•</span>
+            <span>📝 {tasks.length} tareas asignadas</span>
+          </div>
+
+          <p className="text-gray-600 text-sm mt-4">
+            Propietario: <strong>{team.owner?.name}</strong>
           </p>
-        )}
-
-        <p className="text-gray-600 mb-6">
-          Propietario: <strong>{team.owner?.name}</strong>
-        </p>
+        </div>
 
         {/* INVITAR */}
-        <div className="bg-white p-5 rounded-xl border shadow mb-8">
+        <div className="bg-white p-5 rounded-xl border shadow-sm mb-10">
           <h3 className="text-lg font-semibold mb-3">Invitar miembro</h3>
 
           <div className="flex gap-3">
@@ -185,7 +197,7 @@ export default function TeamDetails() {
             />
             <button
               onClick={handleInvite}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg text-sm"
+              className="bg-gray-800 hover:bg-black text-white px-5 py-2 rounded-lg text-sm"
             >
               Invitar
             </button>
@@ -193,7 +205,7 @@ export default function TeamDetails() {
         </div>
 
         {/* MIEMBROS */}
-        <div className="bg-white p-5 rounded-xl border shadow mb-8">
+        <div className="bg-white p-5 rounded-xl border shadow-sm mb-10">
           <h3 className="text-lg font-semibold mb-4">Miembros del equipo</h3>
 
           {team.members.length === 0 ? (
@@ -205,9 +217,12 @@ export default function TeamDetails() {
                   key={m.id}
                   className="flex justify-between items-center py-3"
                 >
-                  <div>
-                    <p className="font-medium text-gray-800">{m.name}</p>
-                    <p className="text-sm text-gray-500">{m.email}</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar name={m.name} />
+                    <div>
+                      <p className="font-medium text-gray-800">{m.name}</p>
+                      <p className="text-sm text-gray-500">{m.email}</p>
+                    </div>
                   </div>
 
                   {m.id !== team.owner.id && (
@@ -225,7 +240,7 @@ export default function TeamDetails() {
         </div>
 
         {/* TAREAS */}
-        <div className="bg-white p-5 rounded-xl border shadow">
+        <div className="bg-white p-5 rounded-xl border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Tareas del equipo</h3>
 
           {tasks.length === 0 ? (
@@ -237,7 +252,7 @@ export default function TeamDetails() {
                   key={t.id}
                   className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition"
                 >
-                  <p className="font-semibold">{t.title}</p>
+                  <p className="font-semibold text-gray-800">{t.title}</p>
                   <p className="text-sm text-gray-600">
                     Estado: {t.status} | Prioridad: {t.priority}
                   </p>

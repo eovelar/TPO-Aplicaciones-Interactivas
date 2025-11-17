@@ -267,7 +267,7 @@ export default function Tasks() {
   };
 
   // ----------------------------------------------------------
-  // Helpers
+  // Helpers visuales
   // ----------------------------------------------------------
   const getPriorityStyle = (priority: Task["priority"]) => {
     switch (priority) {
@@ -313,6 +313,37 @@ export default function Tasks() {
   };
 
   // ----------------------------------------------------------
+  // Banner suave dinámico
+  // ----------------------------------------------------------
+  const getBannerData = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+      return {
+        icon: "🌅",
+        bg: "linear-gradient(to right, #fee2ff, #f3e8ff)",
+        message: "Arranquemos el día 💪"
+      };
+    }
+
+    if (hour >= 12 && hour < 19) {
+      return {
+        icon: "☀️",
+        bg: "linear-gradient(to right, #ffe9cc, #fff4e6)",
+        message: "Sigamos avanzando ✨"
+      };
+    }
+
+    return {
+      icon: "🌙",
+      bg: "linear-gradient(to right, #e0e7ff, #f3f4ff)",
+      message: "Ideal para cerrar pendientes 🔹"
+    };
+  };
+
+  const banner = getBannerData();
+
+  // ----------------------------------------------------------
   // Render
   // ----------------------------------------------------------
   if (loading)
@@ -340,6 +371,17 @@ export default function Tasks() {
           >
             + Nueva Tarea
           </button>
+        </div>
+
+        {/* BANNER SUAVE */}
+        <div
+          className="w-full rounded-xl p-4 mb-6 shadow-sm border border-gray-200"
+          style={{ background: banner.bg }}
+        >
+          <p className="text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+            <span className="text-xl">{banner.icon}</span>
+            {banner.message} — tenés <b>{visibleTasks.length}</b> tareas activas.
+          </p>
         </div>
 
         {/* TOGGLE */}

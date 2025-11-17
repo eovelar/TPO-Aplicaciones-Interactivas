@@ -8,8 +8,18 @@ interface Team {
   name: string;
   description?: string;
   members?: any[];
+  tasks?: any[];
   owner?: any;
 }
+
+const Avatar = ({ name }: { name: string }) => {
+  const letter = name ? name[0].toUpperCase() : "?";
+  return (
+    <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-sm font-semibold">
+      {letter}
+    </div>
+  );
+};
 
 export default function Teams() {
   const { user } = useUser();
@@ -38,7 +48,7 @@ export default function Teams() {
     fetchTeams();
   }, []);
 
-  //  Crear equipo
+  // Crear equipo
   const createTeam = async () => {
     if (!newTeamName.trim()) return alert("El nombre es obligatorio");
 
@@ -60,12 +70,13 @@ export default function Teams() {
       setNewTeamName("");
       setNewTeamDescription("");
       fetchTeams();
+
     } catch (err) {
       alert("No se pudo crear el equipo");
     }
   };
 
-  //  Eliminar equipo
+  // Eliminar
   const deleteTeam = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este equipo?")) return;
 
@@ -79,74 +90,101 @@ export default function Teams() {
 
       fetchTeams();
     } catch (err) {
-      console.error("Error al eliminar:", err);
-      alert("Error al eliminar el equipo");
+      alert("Error al eliminar equipo");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <span>👥</span> Gestión de Equipos
-        </h2>
 
-        {/* FORMULARIO DE CREACIÓN */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow mb-8 flex flex-col gap-4">
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+          <h2 className="text-3xl font-semibold text-gray-800">Equipos</h2>
+
+          <button
+            onClick={() => createTeam()}
+            className="border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition"
+          >
+            + Crear equipo
+          </button>
+        </div>
+
+        {/* FORM CREACION */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow mb-10">
           <input
             type="text"
-            placeholder="Nombre del nuevo equipo..."
+            placeholder="Nombre del equipo..."
             value={newTeamName}
             onChange={(e) => setNewTeamName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-purple-300"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-gray-300"
           />
 
           <textarea
-            placeholder="Descripción del equipo (opcional)..."
+            placeholder="Descripción (opcional)..."
             value={newTeamDescription}
             onChange={(e) => setNewTeamDescription(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-purple-300 min-h-[80px]"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm min-h-[70px] mb-3 focus:ring-2 focus:ring-gray-300"
           />
 
           <button
             onClick={createTeam}
-            className="self-start bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
+            className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-md text-sm font-medium transition"
           >
-            Crear
+            Crear equipo
           </button>
         </div>
 
         {/* LISTA DE TARJETAS */}
         {teams.length === 0 ? (
-          <p className="text-center text-gray-600">No hay equipos creados.</p>
+          <p className="text-center text-gray-600">No hay equipos creados todavía.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map((team) => (
               <div
                 key={team.id}
-                className="bg-white p-5 rounded-xl shadow border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
+                className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5 flex flex-col justify-between"
               >
+                {/* HEADER CARD */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-800">
                     {team.name}
                   </h3>
 
-                  {team.description && (
-                    <p className="text-gray-600 text-sm mt-1">
-                      {team.description}
-                    </p>
-                  )}
-
-                  <p className="text-gray-500 text-xs mt-2">ID: {team.id}</p>
-
-                  <p className="text-gray-700 text-sm">
-                    👥 Miembros: <strong>{team.members?.length ?? 0}</strong>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {team.description || "Sin descripción"}
                   </p>
+
+                  {/* STATS */}
+                  <div className="flex items-center gap-3 mt-4 text-sm text-gray-700">
+                    <span>👥 {team.members?.length ?? 0} miembros</span>
+                    <span>•</span>
+                    <span>📝 {team.tasks?.length ?? 0} tareas</span>
+                  </div>
+
+                  {/* AVATARES */}
+                  <div className="flex items-center gap-2 mt-3">
+                    {team.members && team.members.length > 0 ? (
+                      <>
+                        {team.members.slice(0, 3).map((m) => (
+                          <Avatar key={m.id} name={m.name} />
+                        ))}
+                        {team.members.length > 3 && (
+                          <div className="text-xs text-gray-600 ml-1">
+                            +{team.members.length - 3}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Sin miembros</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center mt-5">
+                {/* ACTIONS */}
+                <div className="flex justify-between items-center mt-6">
                   <button
-                    className="text-purple-600 hover:underline text-sm"
+                    className="text-gray-900 hover:underline text-sm font-medium"
                     onClick={() => navigate(`/teams/${team.id}`)}
                   >
                     Ver detalles
@@ -154,11 +192,12 @@ export default function Teams() {
 
                   <button
                     onClick={() => deleteTeam(team.id)}
-                    className="text-red-500 hover:text-red-700 font-medium text-sm"
+                    className="text-red-500 hover:text-red-700 text-sm font-medium"
                   >
                     Eliminar
                   </button>
                 </div>
+
               </div>
             ))}
           </div>
