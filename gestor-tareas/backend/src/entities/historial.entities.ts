@@ -16,30 +16,30 @@ export type AccionHistorial =
   | "LOGIN"
   | "LOGOUT";
 
-@Entity({ name: "Historial" })
+@Entity({ name: "historial" })
 export class Historial {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Index()
-  @Column({ type: "varchar", length: 50 })
-  entidad!: string; // p.ej. "Task", "User"
+  @Column({ name: "entidad", type: "varchar", length: 50 })
+  entidad!: string;
 
   @Index()
-  @Column({ type: "int" })
-  entidadId!: number; // id de la entidad afectada
+  @Column({ name: "entidad_id", type: "int" })
+  entidadId!: number;
 
   @Index()
-  @Column({ type: "varchar", length: 30 })
+  @Column({ name: "accion", type: "varchar", length: 30 })
   accion!: AccionHistorial;
 
   @Index()
-  @Column({ type: "int" })
-  usuarioId!: number; // quién hizo la acción
+  @Column({ name: "usuario_id", type: "int" })
+  usuarioId!: number;
 
-  @CreateDateColumn({ type: "timestamp with time zone" })
+  @CreateDateColumn({ name: "fecha", type: "timestamp with time zone" })
   fecha!: Date;
 
-  @Column({ type: "jsonb", nullable: true })
-  detalles?: Record<string, any>; // cambios prev/pos, comentarios, etc.
+  @Column({ name: "detalles", type: "jsonb", nullable: true })
+  detalles?: Record<string, any>;
 }
