@@ -29,7 +29,9 @@ export default function Teams() {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
 
-  // Cargar equipos
+  // =============================
+  // CARGAR EQUIPOS (con fix)
+  // =============================
   const fetchTeams = async () => {
     try {
       const res = await api.get("/teams", {
@@ -38,7 +40,21 @@ export default function Teams() {
           "x-user-role": user?.role,
         },
       });
-      setTeams(res.data);
+
+      let raw = res.data;
+
+      // Acepta cualquier formato que venga del backend
+      if (Array.isArray(raw)) {
+        setTeams(raw);
+      } else if (raw.items) {
+        setTeams(raw.items);
+      } else if (raw.data) {
+        setTeams(raw.data);
+      } else {
+        console.error("Formato desconocido en /teams:", raw);
+        setTeams([]);
+      }
+
     } catch (err) {
       console.error("Error al cargar equipos:", err);
     }
@@ -48,16 +64,18 @@ export default function Teams() {
     fetchTeams();
   }, []);
 
-  // Crear equipo
+  // =============================
+  // CREAR EQUIPO
+  // =============================
   const createTeam = async () => {
     if (!newTeamName.trim()) return alert("El nombre es obligatorio");
 
     try {
       await api.post(
         "/teams",
-        { 
+        {
           name: newTeamName,
-          description: newTeamDescription
+          description: newTeamDescription,
         },
         {
           headers: {
@@ -76,7 +94,9 @@ export default function Teams() {
     }
   };
 
-  // Eliminar
+  // =============================
+  // ELIMINAR EQUIPO
+  // =============================
   const deleteTeam = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este equipo?")) return;
 
@@ -94,6 +114,9 @@ export default function Teams() {
     }
   };
 
+  // =============================
+  // UI
+  // =============================
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="max-w-6xl mx-auto">
@@ -110,7 +133,7 @@ export default function Teams() {
           </button>
         </div>
 
-        {/* FORM CREACION */}
+        {/* FORM CREACIÓN */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow mb-10">
           <input
             type="text"
@@ -137,7 +160,9 @@ export default function Teams() {
 
         {/* LISTA DE TARJETAS */}
         {teams.length === 0 ? (
-          <p className="text-center text-gray-600">No hay equipos creados todavía.</p>
+          <p className="text-center text-gray-600">
+            No hay equipos creados todavía.
+          </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map((team) => (
@@ -145,6 +170,7 @@ export default function Teams() {
                 key={team.id}
                 className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5 flex flex-col justify-between"
               >
+
                 {/* HEADER CARD */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">

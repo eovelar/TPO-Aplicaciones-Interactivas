@@ -23,6 +23,7 @@ function snapshotColumns(event: any, source: any) {
 function computeDiff(before: any, after: any) {
   const ignore = new Set(["updatedAt", "createdAt", "password"]);
   const changed: Record<string, any> = {};
+
   const keys = new Set([
     ...(before ? Object.keys(before) : []),
     ...(after ? Object.keys(after) : []),
@@ -32,10 +33,12 @@ function computeDiff(before: any, after: any) {
 
   for (const k of keys) {
     if (ignore.has(k)) continue;
+
     if (norm(before?.[k]) !== norm(after?.[k])) {
       changed[k] = { antes: norm(before?.[k]), despues: norm(after?.[k]) };
     }
   }
+
   return changed;
 }
 
@@ -52,7 +55,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     await repo.save(
       repo.create({
         entidad: entityNameFromTarget(event.metadata.target),
-        entidadId: event.entity?.id, // <-- FIX CORRECTO
+        entidadId: event.entity?.id,
         accion: "CREAR",
         usuarioId: RequestContext.getUserId() ?? 0,
         detalles: { nuevo: snapshotColumns(event, event.entity) },
@@ -88,7 +91,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     await repo.save(
       repo.create({
         entidad: entityNameFromTarget(event.metadata.target),
-        entidadId: (event.entity as any)?.id, // <-- FIX
+        entidadId: (event.entity as any)?.id,
         accion: "ACTUALIZAR",
         usuarioId: RequestContext.getUserId() ?? 0,
         detalles: { cambios: diff },
@@ -108,7 +111,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
         entidadId:
           (event.databaseEntity as any)?.id ??
           (event.entity as any)?.id ??
-          0, // <-- FIX
+          0,
         accion: "ELIMINAR",
         usuarioId: RequestContext.getUserId() ?? 0,
         detalles: {

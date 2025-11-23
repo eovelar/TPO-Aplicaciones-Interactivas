@@ -31,7 +31,6 @@ interface Team {
   owner: Member;
 }
 
-// Avatar minimalista
 const Avatar = ({ name }: { name: string }) => {
   const letter = name ? name[0].toUpperCase() : "?";
   return (
@@ -51,10 +50,12 @@ export default function TeamDetails() {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Cargar equipo
+  // -------------------------------------------
+  // Cargar equipo por ID
+  // -------------------------------------------
   const fetchTeam = async () => {
     try {
-      const res = await api.get("/teams", {
+      const res = await api.get(`/teams/${id}`, {
         headers: {
           "x-user-id": user?.id,
           "x-user-role": user?.role,
@@ -62,8 +63,8 @@ export default function TeamDetails() {
         },
       });
 
-      const found = res.data.find((t: Team) => t.id === Number(id));
-      setTeam(found || null);
+      const teamData = res.data?.data ?? res.data;
+      setTeam(teamData);
     } catch (err) {
       console.error("Error al cargar equipo:", err);
     } finally {
@@ -71,7 +72,9 @@ export default function TeamDetails() {
     }
   };
 
-  // Cargar tareas de miembros del equipo
+  // -------------------------------------------
+  // Cargar tareas asignadas a miembros
+  // -------------------------------------------
   const fetchTasks = async () => {
     try {
       const res = await api.get("/tasks", {
@@ -82,7 +85,13 @@ export default function TeamDetails() {
         },
       });
 
-      const filtered = res.data.filter((t: Task) =>
+      const list = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+
+      const filtered = list.filter((t: Task) =>
         team?.members.some((m) => m.id === t.assignedTo?.id)
       );
 
@@ -100,7 +109,9 @@ export default function TeamDetails() {
     if (team) fetchTasks();
   }, [team]);
 
+  // -------------------------------------------
   // Invitar miembro
+  // -------------------------------------------
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return alert("Ingresá un email válido");
 
@@ -119,14 +130,16 @@ export default function TeamDetails() {
 
       setInviteEmail("");
       fetchTeam();
-      alert("Usuario agregado ✔");
+      alert("Usuario agregado correctamente");
     } catch (err) {
       console.error(err);
       alert("No se pudo invitar al usuario");
     }
   };
 
-  // Quitar miembro
+  // -------------------------------------------
+  // Eliminar miembro
+  // -------------------------------------------
   const removeMember = async (memberId: number) => {
     if (!confirm("¿Quitar miembro del equipo?")) return;
 
@@ -146,7 +159,6 @@ export default function TeamDetails() {
     }
   };
 
-  // Cargando
   if (loading || !team)
     return <p className="text-center mt-10 text-gray-600">Cargando equipo...</p>;
 
@@ -154,7 +166,6 @@ export default function TeamDetails() {
     <div className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="max-w-5xl mx-auto">
 
-        {/* VOLVER */}
         <button
           onClick={() => navigate("/teams")}
           className="mb-6 text-gray-600 hover:text-gray-800 text-sm"
@@ -162,9 +173,11 @@ export default function TeamDetails() {
           ← Volver a Equipos
         </button>
 
-        {/* HEADER */}
+        {/* Header */}
         <div className="bg-white p-6 border border-gray-200 shadow-sm rounded-xl mb-10">
-          <h1 className="text-3xl font-semibold text-gray-800">{team.name}</h1>
+          <h1 className="text-3xl font-semibold text-gray-800">
+            {team.name}
+          </h1>
 
           {team.description && (
             <p className="text-gray-700 text-sm mt-2 whitespace-pre-line">
@@ -173,9 +186,9 @@ export default function TeamDetails() {
           )}
 
           <div className="flex items-center gap-6 mt-5 text-gray-700 text-sm">
-            <span>👥 {team.members.length} miembros</span>
+            <span>{team.members.length} miembros</span>
             <span>•</span>
-            <span>📝 {tasks.length} tareas asignadas</span>
+            <span>{tasks.length} tareas asignadas</span>
           </div>
 
           <p className="text-gray-600 text-sm mt-4">
@@ -183,14 +196,14 @@ export default function TeamDetails() {
           </p>
         </div>
 
-        {/* INVITAR */}
+        {/* Invitar */}
         <div className="bg-white p-5 rounded-xl border shadow-sm mb-10">
           <h3 className="text-lg font-semibold mb-3">Invitar miembro</h3>
 
           <div className="flex gap-3">
             <input
               type="email"
-              placeholder="Email del usuario..."
+              placeholder="Email del usuario"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
@@ -204,7 +217,7 @@ export default function TeamDetails() {
           </div>
         </div>
 
-        {/* MIEMBROS */}
+        {/* Miembros */}
         <div className="bg-white p-5 rounded-xl border shadow-sm mb-10">
           <h3 className="text-lg font-semibold mb-4">Miembros del equipo</h3>
 
@@ -213,10 +226,7 @@ export default function TeamDetails() {
           ) : (
             <ul className="divide-y divide-gray-200">
               {team.members.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex justify-between items-center py-3"
-                >
+                <li key={m.id} className="flex justify-between items-center py-3">
                   <div className="flex items-center gap-3">
                     <Avatar name={m.name} />
                     <div>
@@ -239,7 +249,7 @@ export default function TeamDetails() {
           )}
         </div>
 
-        {/* TAREAS */}
+        {/* Tareas */}
         <div className="bg-white p-5 rounded-xl border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Tareas del equipo</h3>
 
@@ -248,10 +258,7 @@ export default function TeamDetails() {
           ) : (
             <ul className="space-y-3">
               {tasks.map((t) => (
-                <li
-                  key={t.id}
-                  className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition"
-                >
+                <li key={t.id} className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition">
                   <p className="font-semibold text-gray-800">{t.title}</p>
                   <p className="text-sm text-gray-600">
                     Estado: {t.status} | Prioridad: {t.priority}

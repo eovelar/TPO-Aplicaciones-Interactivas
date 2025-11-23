@@ -25,16 +25,17 @@ export class Historial {
   @Column({ name: "entidad", type: "varchar", length: 50 })
   entidad!: string;
 
+  // ⬅ AHORA PERMITE NULL
   @Index()
-  @Column({ name: "entidad_id", type: "int" })
-  entidadId!: number;
+  @Column({ name: "entidadId", type: "int", nullable: true })
+  entidadId!: number | null;
 
   @Index()
   @Column({ name: "accion", type: "varchar", length: 30 })
   accion!: AccionHistorial;
 
   @Index()
-  @Column({ name: "usuario_id", type: "int" })
+  @Column({ name: "usuarioId", type: "int" })
   usuarioId!: number;
 
   @CreateDateColumn({ name: "fecha", type: "timestamp with time zone" })

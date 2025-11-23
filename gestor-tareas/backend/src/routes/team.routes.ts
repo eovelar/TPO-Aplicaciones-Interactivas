@@ -1,39 +1,59 @@
 import { Router } from "express";
 import { simpleAuth, requireRole } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
+
 import {
   teamSchema,
   addMemberSchema,
   removeMemberSchema,
 } from "../validations/team.validation";
+
 import {
   createTeam,
   getTeams,
+  getTeamById,     // ← NUEVO
   updateTeam,
   deleteTeam,
   addMember,
   removeMember,
-  inviteToTeam, // nuevo controlador
+  inviteToTeam,
 } from "../controllers/team.controller";
 
 const router = Router();
 
-// Crear un equipo → cualquier usuario autenticado
+/* ============================================================
+   🔹 Crear equipo
+============================================================ */
 router.post("/", simpleAuth, validate(teamSchema), createTeam);
 
-// Listar equipos → cualquier usuario autenticado
+/* ============================================================
+   🔹 Listar equipos
+============================================================ */
 router.get("/", simpleAuth, getTeams);
 
-// Actualizar un equipo → cualquier usuario autenticado
+/* ============================================================
+   🔹 Obtener equipo por ID (NECESARIO PARA TeamDetails)
+============================================================ */
+router.get("/:id", simpleAuth, getTeamById);
+
+/* ============================================================
+   🔹 Actualizar equipo
+============================================================ */
 router.put("/:id", simpleAuth, validate(teamSchema), updateTeam);
 
-// Eliminar un equipo → solo propietario
+/* ============================================================
+   🔹 Eliminar equipo
+============================================================ */
 router.delete("/:id", simpleAuth, requireRole(["propietario"]), deleteTeam);
 
-// Añadir miembro a un equipo → cualquier usuario autenticado
+/* ============================================================
+   🔹 Añadir miembro
+============================================================ */
 router.post("/:id/members", simpleAuth, validate(addMemberSchema), addMember);
 
-// Quitar miembro de un equipo → cualquier usuario autenticado
+/* ============================================================
+   🔹 Quitar miembro
+============================================================ */
 router.delete(
   "/:id/members/:userId",
   simpleAuth,
@@ -41,7 +61,9 @@ router.delete(
   removeMember
 );
 
-// Invitar usuario a un equipo → solo propietario
+/* ============================================================
+   🔹 Invitar usuario por email
+============================================================ */
 router.post(
   "/:id/invite",
   simpleAuth,
