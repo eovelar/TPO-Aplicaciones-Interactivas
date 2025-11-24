@@ -18,29 +18,68 @@ export type AccionHistorial =
 
 @Entity({ name: "historial" })
 export class Historial {
+  
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Index()
-  @Column({ name: "entidad", type: "varchar", length: 50 })
+  @Column({
+    name: "entidad",
+    type: "varchar",
+    length: 50,
+  })
   entidad!: string;
 
-  // ⬅ AHORA PERMITE NULL
   @Index()
-  @Column({ name: "entidadId", type: "int", nullable: true })
+  @Column({
+    name: "entidadId",
+    type: "int",
+    nullable: true,
+  })
   entidadId!: number | null;
 
   @Index()
-  @Column({ name: "accion", type: "varchar", length: 30 })
+  @Column({
+    name: "accion",
+    type: "varchar",
+    length: 30,
+  })
   accion!: AccionHistorial;
 
   @Index()
-  @Column({ name: "usuarioId", type: "int" })
-  usuarioId!: number;
+  @Column({
+    name: "usuarioId",
+    type: "int",
+    nullable: true,
+  })
+  usuarioId!: number | null;
 
-  @CreateDateColumn({ name: "fecha", type: "timestamp with time zone" })
+  @Column({
+    name: "usuarioNombre",
+    type: "varchar",
+    length: 120,
+    nullable: true,
+  })
+  usuarioNombre!: string | null;
+
+  @Column({
+    name: "entidadNombre",
+    type: "varchar",
+    length: 120,
+    nullable: true,
+  })
+  entidadNombre!: string | null;
+
+  @CreateDateColumn({
+    name: "fecha",
+    type: "timestamp with time zone",
+  })
   fecha!: Date;
 
-  @Column({ name: "detalles", type: "jsonb", nullable: true })
+  @Column({
+    name: "detalles",
+    type: "jsonb",
+    nullable: true,
+  })
   detalles?: Record<string, any>;
 }

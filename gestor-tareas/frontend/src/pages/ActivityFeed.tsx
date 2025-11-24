@@ -5,36 +5,48 @@ import { useUser } from "../context/UserContext";
 interface HistItem {
   id: number;
   entidad: string;
+  entidadNombre: string | null;
   accion: "CREAR" | "ACTUALIZAR" | "ELIMINAR";
-  usuarioId: number;
+  usuarioId: number | null;
+  usuarioNombre: string | null;
   detalles: any;
-  createdAt: string;
+  fecha: string;
+}
+
+// ----------- FORMATEADOR DE TIEMPO ----------
+function timeAgo(date: string) {
+  const diff = (new Date().getTime() - new Date(date).getTime()) / 1000;
+
+  if (diff < 60) return "hace unos segundos";
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+  return new Date(date).toLocaleDateString("es-AR");
 }
 
 export default function ActivityFeed() {
   const { user } = useUser();
+
   const [items, setItems] = useState<HistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState({
-    page: 1,
-    totalPages: 1,
-  });
+  const [meta, setMeta] = useState({ page: 1, totalPages: 1 });
 
+  // ----------- FETCH ----------
   const fetchActivity = async () => {
     try {
       const res = await api.get("/historial", {
-        headers: {
-          "x-user-id": String(user?.id),
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-        params: { page, limit: 10 },
+        params: { limit: 15, offset: (page - 1) * 15 },
       });
 
-      setItems(res.data.data || []);
-      setMeta(res.data.meta || { page: 1, totalPages: 1 });
+      const data = res.data;
+
+      const list = data.items || data.data || [];
+      const total = data.total || data.meta?.total || list.length;
+      const totalPages = data.meta?.totalPages ?? Math.max(1, Math.ceil(total / 15));
+
+      setItems(list);
+      setMeta({ page, totalPages });
     } catch (err) {
       console.error("Error cargando historial:", err);
     } finally {
@@ -46,82 +58,108 @@ export default function ActivityFeed() {
     fetchActivity();
   }, [page]);
 
-  const groupByDate = (list: HistItem[]) => {
-    const groups: Record<string, HistItem[]> = {};
-
-    list.forEach((item) => {
-      const date = new Date(item.createdAt).toLocaleDateString("es-AR");
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(item);
-    });
-
-    return groups;
+  // ----------- ICONOS ----------
+  const icons: Record<string, string> = {
+    CREAR: "🟢",
+    ACTUALIZAR: "🟡",
+    ELIMINAR: "🔴",
   };
 
-  const grouped = groupByDate(items);
+  // ----------- TEXTO ----------
+  const actionText = (accion: string, entidad: string, entidadNombre: string | null) => {
+    const nombre = entidadNombre ?? entidad;
 
-  const getIcon = (accion: string) => {
     switch (accion) {
       case "CREAR":
-        return "🟢";
+        return `creó ${nombre}`;
       case "ACTUALIZAR":
-        return "🟡";
+        return `modificó ${nombre}`;
       case "ELIMINAR":
-        return "🔴";
+        return `eliminó ${nombre}`;
       default:
-        return "⚪";
+        return "realizó una acción";
     }
   };
 
+  // ----------- DETALLES ----------
+  const renderDetails = (det: any) => {
+    if (!det) return null;
+
+    const before = det.antes;
+    const after = det.despues;
+    const nuevo = det.nuevo;
+
+    if (nuevo) {
+      return (
+        <ul className="text-sm text-gray-700 space-y-1 mt-2">
+          {Object.entries(nuevo).map(([k, v]) => (
+            <li key={k}>
+              <span className="font-semibold capitalize">{k}: </span>
+              {String(v)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    if (before && after) {
+      return (
+        <div className="mt-3 space-y-2">
+          <p className="text-gray-700 font-semibold text-sm">Cambios:</p>
+          <div className="border rounded-lg bg-gray-50 p-3 text-sm space-y-3">
+            {Object.keys(after).map((key) => (
+              <div key={key}>
+                <p className="font-semibold capitalize">{key}:</p>
+                <p className="text-gray-500 line-through">{before[key] ?? "—"}</p>
+                <p className="text-gray-900">{after[key] ?? "—"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // ----------- LOADING ----------
   if (loading)
     return <p className="text-center mt-10 text-gray-600">Cargando actividad...</p>;
 
   return (
-    <div className="max-w-4xl mx-auto">
-
-      <h2 className="text-2xl font-semibold mb-4">Actividad reciente</h2>
-      <hr className="mb-6" />
+    <div className="max-w-3xl mx-auto py-6">
+      <h2 className="text-3xl font-semibold mb-6">Actividad reciente</h2>
 
       {items.length === 0 ? (
         <p className="text-center text-gray-600">No hay actividad registrada.</p>
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-6">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="flex gap-4 p-5 bg-white border rounded-xl shadow-sm hover:shadow-lg transition"
+            >
+              {/* AVATAR */}
+              <div className="w-12 h-12 bg-indigo-600 text-white flex items-center justify-center rounded-full font-semibold text-lg">
+                {(item.usuarioNombre || `Usuario ${item.usuarioId}`)[0].toUpperCase()}
+              </div>
 
-          {Object.entries(grouped).map(([date, entries]) => (
-            <div key={date}>
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">{date}</h3>
+              {/* CONTENIDO */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{icons[item.accion]}</span>
 
-              <div className="space-y-3 border-l-2 border-gray-300 pl-4">
-                {entries.map((e) => (
-                  <div
-                    key={e.id}
-                    className="flex items-start gap-3 bg-white p-4 border rounded-lg shadow-sm hover:bg-gray-50 transition"
-                  >
-                    <div className="text-xl">{getIcon(e.accion)}</div>
+                  <span className="font-medium text-gray-900">
+                    {item.usuarioNombre
+                      ? item.usuarioNombre
+                      : `Usuario ${item.usuarioId}`}{" "}
+                    {actionText(item.accion, item.entidad, item.entidadNombre)}
+                  </span>
+                </div>
 
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        {e.accion === "CREAR" && "Se creó una tarea"}
-                        {e.accion === "ACTUALIZAR" && "Se modificó una tarea"}
-                        {e.accion === "ELIMINAR" && "Se eliminó una tarea"}
-                      </p>
+                {renderDetails(item.detalles)}
 
-                      <p className="text-gray-500 text-sm">
-                        Usuario ID: {e.usuarioId}
-                      </p>
-
-                      {e.detalles?.title && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          <span className="font-semibold">Título:</span> {e.detalles.title}
-                        </p>
-                      )}
-
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(e.createdAt).toLocaleTimeString("es-AR")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                <p className="text-xs text-gray-400 mt-2">{timeAgo(item.fecha)}</p>
               </div>
             </div>
           ))}
@@ -131,9 +169,9 @@ export default function ActivityFeed() {
       {/* PAGINACIÓN */}
       <div className="flex justify-center items-center gap-4 mt-10">
         <button
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page === 1}
-          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-40"
         >
           Anterior
         </button>
@@ -143,9 +181,9 @@ export default function ActivityFeed() {
         </span>
 
         <button
-          onClick={() => setPage((p) => Math.min(p + 1, meta.totalPages))}
+          onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
           disabled={page === meta.totalPages}
-          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-40"
         >
           Siguiente
         </button>

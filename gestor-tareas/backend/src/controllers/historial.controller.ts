@@ -13,15 +13,19 @@ export const getHistorial = async (req: Request, res: Response) => {
       accion,
       desde,
       hasta,
-      limit = "50",
-      offset = "0",
+      limit = "10",
+      page = "1",
     } = req.query as Record<string, string>;
+
+    const take = Number(limit);
+    const currentPage = Number(page);
+    const skip = (currentPage - 1) * take;
 
     const qb = repo
       .createQueryBuilder("h")
       .orderBy("h.fecha", "DESC")
-      .take(Number(limit))
-      .skip(Number(offset));
+      .take(take)
+      .skip(skip);
 
     if (entidad)
       qb.andWhere("h.entidad = :entidad", { entidad });
@@ -43,7 +47,15 @@ export const getHistorial = async (req: Request, res: Response) => {
 
     const [items, total] = await qb.getManyAndCount();
 
-    return res.json({ total, items });
+    return res.json({
+      data: items,  // ← el frontend espera esto
+      meta: {
+        page: currentPage,
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take),
+      }
+    });
 
   } catch (error) {
     console.error("❌ Error en getHistorial:", error);

@@ -33,7 +33,6 @@ function computeDiff(before: any, after: any) {
 
   for (const k of keys) {
     if (ignore.has(k)) continue;
-
     if (norm(before?.[k]) !== norm(after?.[k])) {
       changed[k] = { antes: norm(before?.[k]), despues: norm(after?.[k]) };
     }
@@ -42,12 +41,23 @@ function computeDiff(before: any, after: any) {
   return changed;
 }
 
+// 🟣 SELECTOR INTELIGENTE DE NOMBRE
+function extractDisplayName(entity: any): string | null {
+  if (!entity) return null;
+
+  if ("title" in entity) return entity.title; // Task
+  if ("name" in entity) return entity.name; // Team/User
+  if ("description" in entity) return entity.description; // Comments o algo similar
+
+  return null;
+}
+
 @EventSubscriber()
 export class AuditSubscriber implements EntitySubscriberInterface {
   private beforeStates = new WeakMap<object, any>();
 
-  /** INSERT */
   async afterInsert(event: InsertEvent<any>) {
+    if (!event.entity || !event.entity.id) return;
     if (event.metadata.target === Historial) return;
 
     const repo = event.manager.getRepository(Historial);
@@ -55,27 +65,27 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     await repo.save(
       repo.create({
         entidad: entityNameFromTarget(event.metadata.target),
-        entidadId: event.entity?.id,
+        entidadId: event.entity.id,
         accion: "CREAR",
-        usuarioId: RequestContext.getUserId() ?? 0,
+        usuarioId: RequestContext.getUserId(),
+        usuarioNombre: RequestContext.getUserName(),
+        entidadNombre: extractDisplayName(event.entity),
         detalles: { nuevo: snapshotColumns(event, event.entity) },
       })
     );
   }
 
-  /** BEFORE UPDATE */
   beforeUpdate(event: UpdateEvent<any>) {
-    if (event.databaseEntity) {
-      this.beforeStates.set(
-        event.entity ?? {},
-        snapshotColumns(event, event.databaseEntity)
-      );
-    }
+    if (!event.databaseEntity) return;
+    this.beforeStates.set(
+      event.entity ?? {},
+      snapshotColumns(event, event.databaseEntity)
+    );
   }
 
-  /** AFTER UPDATE */
   async afterUpdate(event: UpdateEvent<any>) {
     if (event.metadata.target === Historial) return;
+    if (!event.entity || !event.entity.id) return;
 
     const before =
       this.beforeStates.get(event.entity ?? {}) ??
@@ -91,34 +101,38 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     await repo.save(
       repo.create({
         entidad: entityNameFromTarget(event.metadata.target),
-        entidadId: (event.entity as any)?.id,
+        entidadId: event.entity.id,
         accion: "ACTUALIZAR",
-        usuarioId: RequestContext.getUserId() ?? 0,
+        usuarioId: RequestContext.getUserId(),
+        usuarioNombre: RequestContext.getUserName(),
+        entidadNombre: extractDisplayName(event.entity),
         detalles: { cambios: diff },
       })
     );
   }
 
-  /** REMOVE */
   async afterRemove(event: RemoveEvent<any>) {
     if (event.metadata.target === Historial) return;
+
+    const entidadId =
+      (event.databaseEntity as any)?.id ??
+      (event.entity as any)?.id ??
+      null;
+
+    if (!entidadId) return;
 
     const repo = event.manager.getRepository(Historial);
 
     await repo.save(
       repo.create({
         entidad: entityNameFromTarget(event.metadata.target),
-        entidadId:
-          (event.databaseEntity as any)?.id ??
-          (event.entity as any)?.id ??
-          0,
+        entidadId,
         accion: "ELIMINAR",
-        usuarioId: RequestContext.getUserId() ?? 0,
+        usuarioId: RequestContext.getUserId(),
+        usuarioNombre: RequestContext.getUserName(),
+        entidadNombre: extractDisplayName(event.databaseEntity ?? event.entity),
         detalles: {
-          previo: snapshotColumns(
-            event,
-            event.databaseEntity ?? event.entity
-          ),
+          previo: snapshotColumns(event, event.databaseEntity ?? event.entity),
         },
       })
     );

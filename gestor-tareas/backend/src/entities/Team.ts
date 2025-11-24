@@ -21,16 +21,13 @@ export class Team {
   @Column({ nullable: true })
   description!: string;
 
-  // 🎨 Color personalizado estilo Discord
   @Column({ nullable: true })
   color!: string;
 
-  // Un equipo tiene un propietario
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   owner!: User;
 
-  // Un equipo tiene muchos miembros
-  @ManyToMany(() => User)
+  @ManyToMany(() => User, (user) => user.teams, { cascade: true })
   @JoinTable({
     name: "team_members",
     joinColumn: { name: "team_id" },
@@ -38,7 +35,6 @@ export class Team {
   })
   members!: User[];
 
-  // Un equipo tiene muchas tareas
   @OneToMany(() => Task, (task) => task.team)
   tasks!: Task[];
 }

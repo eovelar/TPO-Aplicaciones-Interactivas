@@ -28,22 +28,18 @@ export default function Teams() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // =============================
-  // CARGAR EQUIPOS (con fix)
-  // =============================
+  // ============================================================
+  // CARGAR EQUIPOS
+  // ============================================================
   const fetchTeams = async () => {
     try {
-      const res = await api.get("/teams", {
-        headers: {
-          "x-user-id": user?.id,
-          "x-user-role": user?.role,
-        },
-      });
+      const res = await api.get("/teams");
 
       let raw = res.data;
 
-      // Acepta cualquier formato que venga del backend
+      // Compatibilidad con distintos formatos del backend
       if (Array.isArray(raw)) {
         setTeams(raw);
       } else if (raw.items) {
@@ -57,6 +53,8 @@ export default function Teams() {
 
     } catch (err) {
       console.error("Error al cargar equipos:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,59 +62,54 @@ export default function Teams() {
     fetchTeams();
   }, []);
 
-  // =============================
+  // ============================================================
   // CREAR EQUIPO
-  // =============================
+  // ============================================================
   const createTeam = async () => {
     if (!newTeamName.trim()) return alert("El nombre es obligatorio");
 
     try {
-      await api.post(
-        "/teams",
-        {
-          name: newTeamName,
-          description: newTeamDescription,
-        },
-        {
-          headers: {
-            "x-user-id": user?.id,
-            "x-user-role": user?.role,
-          },
-        }
-      );
+      await api.post("/teams", {
+        name: newTeamName,
+        description: newTeamDescription,
+      });
 
       setNewTeamName("");
       setNewTeamDescription("");
       fetchTeams();
 
     } catch (err) {
+      console.error("Error al crear equipo:", err);
       alert("No se pudo crear el equipo");
     }
   };
 
-  // =============================
+  // ============================================================
   // ELIMINAR EQUIPO
-  // =============================
+  // ============================================================
   const deleteTeam = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este equipo?")) return;
 
     try {
-      await api.delete(`/teams/${id}`, {
-        headers: {
-          "x-user-id": user?.id,
-          "x-user-role": user?.role,
-        },
-      });
-
+      await api.delete(`/teams/${id}`);
       fetchTeams();
     } catch (err) {
+      console.error("Error al eliminar equipo:", err);
       alert("Error al eliminar equipo");
     }
   };
 
-  // =============================
+  // ============================================================
   // UI
-  // =============================
+  // ============================================================
+  if (loading) {
+    return (
+      <p className="text-center text-gray-600 mt-10">
+        Cargando equipos...
+      </p>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="max-w-6xl mx-auto">
@@ -126,7 +119,7 @@ export default function Teams() {
           <h2 className="text-3xl font-semibold text-gray-800">Equipos</h2>
 
           <button
-            onClick={() => createTeam()}
+            onClick={createTeam}
             className="border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition"
           >
             + Crear equipo
@@ -158,7 +151,7 @@ export default function Teams() {
           </button>
         </div>
 
-        {/* LISTA DE TARJETAS */}
+        {/* LISTA DE EQUIPOS */}
         {teams.length === 0 ? (
           <p className="text-center text-gray-600">
             No hay equipos creados todavía.
@@ -216,12 +209,15 @@ export default function Teams() {
                     Ver detalles
                   </button>
 
-                  <button
-                    onClick={() => deleteTeam(team.id)}
-                    className="text-red-500 hover:text-red-700 text-sm font-medium"
-                  >
-                    Eliminar
-                  </button>
+                  {/* Solo el propietario puede eliminar */}
+                  {user?.id === team.owner?.id && (
+                    <button
+                      onClick={() => deleteTeam(team.id)}
+                      className="text-red-500 hover:text-red-700 text-sm font-medium"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
 
               </div>

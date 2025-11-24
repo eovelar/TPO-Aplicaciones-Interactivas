@@ -50,19 +50,12 @@ export default function TeamDetails() {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // -------------------------------------------
-  // Cargar equipo por ID
-  // -------------------------------------------
+  // ============================================================
+  // CARGAR EQUIPO
+  // ============================================================
   const fetchTeam = async () => {
     try {
-      const res = await api.get(`/teams/${id}`, {
-        headers: {
-          "x-user-id": user?.id,
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-      });
-
+      const res = await api.get(`/teams/${id}`);
       const teamData = res.data?.data ?? res.data;
       setTeam(teamData);
     } catch (err) {
@@ -72,25 +65,21 @@ export default function TeamDetails() {
     }
   };
 
-  // -------------------------------------------
-  // Cargar tareas asignadas a miembros
-  // -------------------------------------------
+  // ============================================================
+  // CARGAR TAREAS ASIGNADAS A USUARIOS DEL EQUIPO
+  // ============================================================
   const fetchTasks = async () => {
     try {
-      const res = await api.get("/tasks", {
-        headers: {
-          "x-user-id": user?.id,
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-      });
+      const res = await api.get("/tasks");
 
-      const list = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(res.data?.data)
-        ? res.data.data
-        : [];
+      const list =
+        Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
 
+      // Filtrar tareas asignadas a miembros del equipo
       const filtered = list.filter((t: Task) =>
         team?.members.some((m) => m.id === t.assignedTo?.id)
       );
@@ -109,49 +98,32 @@ export default function TeamDetails() {
     if (team) fetchTasks();
   }, [team]);
 
-  // -------------------------------------------
-  // Invitar miembro
-  // -------------------------------------------
+  // ============================================================
+  // INVITAR MIEMBRO
+  // ============================================================
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return alert("Ingresá un email válido");
 
     try {
-      await api.post(
-        `/teams/${id}/invite`,
-        { email: inviteEmail },
-        {
-          headers: {
-            "x-user-id": user?.id,
-            "x-user-role": user?.role,
-            "x-user-email": user?.email,
-          },
-        }
-      );
+      await api.post(`/teams/${id}/invite`, { email: inviteEmail });
 
       setInviteEmail("");
       fetchTeam();
       alert("Usuario agregado correctamente");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("No se pudo invitar al usuario");
+      alert(err.response?.data?.message || "No se pudo invitar al usuario");
     }
   };
 
-  // -------------------------------------------
-  // Eliminar miembro
-  // -------------------------------------------
+  // ============================================================
+  // REMOVER MIEMBRO
+  // ============================================================
   const removeMember = async (memberId: number) => {
     if (!confirm("¿Quitar miembro del equipo?")) return;
 
     try {
-      await api.delete(`/teams/${id}/members/${memberId}`, {
-        headers: {
-          "x-user-id": user?.id,
-          "x-user-role": user?.role,
-          "x-user-email": user?.email,
-        },
-      });
-
+      await api.delete(`/teams/${id}/members/${memberId}`);
       fetchTeam();
     } catch (err) {
       console.error("Error al remover miembro:", err);
@@ -159,9 +131,22 @@ export default function TeamDetails() {
     }
   };
 
-  if (loading || !team)
+  // ============================================================
+  // LOADING
+  // ============================================================
+  if (loading)
     return <p className="text-center mt-10 text-gray-600">Cargando equipo...</p>;
 
+  if (!team)
+    return (
+      <p className="text-center mt-10 text-red-600">
+        No se encontró el equipo.
+      </p>
+    );
+
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="max-w-5xl mx-auto">
@@ -173,7 +158,7 @@ export default function TeamDetails() {
           ← Volver a Equipos
         </button>
 
-        {/* Header */}
+        {/* HEADER */}
         <div className="bg-white p-6 border border-gray-200 shadow-sm rounded-xl mb-10">
           <h1 className="text-3xl font-semibold text-gray-800">
             {team.name}
@@ -196,7 +181,7 @@ export default function TeamDetails() {
           </p>
         </div>
 
-        {/* Invitar */}
+        {/* INVITAR */}
         <div className="bg-white p-5 rounded-xl border shadow-sm mb-10">
           <h3 className="text-lg font-semibold mb-3">Invitar miembro</h3>
 
@@ -217,7 +202,7 @@ export default function TeamDetails() {
           </div>
         </div>
 
-        {/* Miembros */}
+        {/* MIEMBROS */}
         <div className="bg-white p-5 rounded-xl border shadow-sm mb-10">
           <h3 className="text-lg font-semibold mb-4">Miembros del equipo</h3>
 
@@ -235,6 +220,7 @@ export default function TeamDetails() {
                     </div>
                   </div>
 
+                  {/* Quitar solo si NO es el owner */}
                   {m.id !== team.owner.id && (
                     <button
                       onClick={() => removeMember(m.id)}
@@ -249,7 +235,7 @@ export default function TeamDetails() {
           )}
         </div>
 
-        {/* Tareas */}
+        {/* TAREAS */}
         <div className="bg-white p-5 rounded-xl border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Tareas del equipo</h3>
 
@@ -258,7 +244,10 @@ export default function TeamDetails() {
           ) : (
             <ul className="space-y-3">
               {tasks.map((t) => (
-                <li key={t.id} className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                <li
+                  key={t.id}
+                  className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition"
+                >
                   <p className="font-semibold text-gray-800">{t.title}</p>
                   <p className="text-sm text-gray-600">
                     Estado: {t.status} | Prioridad: {t.priority}
@@ -272,7 +261,6 @@ export default function TeamDetails() {
             </ul>
           )}
         </div>
-
       </div>
     </div>
   );

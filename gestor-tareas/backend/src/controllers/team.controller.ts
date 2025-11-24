@@ -9,9 +9,7 @@ import { getPagination } from "../utils/pagination";
 const teamRepo = AppDataSource.getRepository(Team);
 const userRepo = AppDataSource.getRepository(User);
 
-/* ============================================================
-   🔹 CREAR EQUIPO (solo propietario)
-============================================================ */
+/* Crear equipo */
 export const createTeam = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "propietario") {
@@ -37,17 +35,11 @@ export const createTeam = async (req: Request, res: Response) => {
     await teamRepo.save(team);
     return prettyJson(res, team, 201);
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al crear equipo", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al crear equipo", error: (error as Error).message }, 500);
   }
 };
 
-/* ============================================================
-   🔹 LISTAR EQUIPOS (con paginación)
-============================================================ */
+/* Listar equipos */
 export const getTeams = async (req: Request, res: Response) => {
   try {
     const { page, limit, skip } = getPagination(req.query);
@@ -87,17 +79,11 @@ export const getTeams = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al obtener equipos", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al obtener equipos", error: (error as Error).message }, 500);
   }
 };
 
-/* ============================================================
-   🔹 OBTENER EQUIPO POR ID (soluciona error del frontend)
-============================================================ */
+/* Obtener equipo por ID */
 export const getTeamById = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -111,17 +97,11 @@ export const getTeamById = async (req: Request, res: Response) => {
 
     return prettyJson(res, { data: team });
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al obtener equipo", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al obtener equipo", error: (error as Error).message }, 500);
   }
 };
 
-/* ============================================================
-   🔹 ACTUALIZAR EQUIPO
-============================================================ */
+/* Actualizar equipo */
 export const updateTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -132,8 +112,9 @@ export const updateTeam = async (req: Request, res: Response) => {
     });
 
     if (!team) return prettyJson(res, { message: "Equipo no encontrado" }, 404);
-    if (req.user?.id !== team.owner.id)
+    if (req.user?.id !== team.owner.id) {
       return prettyJson(res, { message: "Solo el propietario puede actualizar" }, 403);
+    }
 
     team.name = req.body.name ?? team.name;
     team.description = req.body.description ?? team.description;
@@ -141,17 +122,11 @@ export const updateTeam = async (req: Request, res: Response) => {
     await teamRepo.save(team);
     return prettyJson(res, team);
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al actualizar equipo", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al actualizar equipo", error: (error as Error).message }, 500);
   }
 };
 
-/* ============================================================
-   🔹 AÑADIR MIEMBRO
-============================================================ */
+/* Añadir miembro */
 export const addMember = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -163,31 +138,29 @@ export const addMember = async (req: Request, res: Response) => {
     });
 
     if (!team) return prettyJson(res, { message: "Equipo no encontrado" }, 404);
-    if (req.user?.id !== team.owner.id)
+    if (req.user?.id !== team.owner.id) {
       return prettyJson(res, { message: "Solo el propietario puede añadir miembros" }, 403);
+    }
+
+    team.members = team.members ?? [];
 
     const user = await userRepo.findOne({ where: { id: Number(userId) } });
     if (!user) return prettyJson(res, { message: "Usuario no encontrado" }, 404);
 
-    if (team.members.some((m) => m.id === user.id))
+    if (team.members.some((m) => m.id === user.id)) {
       return prettyJson(res, { message: "El usuario ya es miembro" }, 400);
+    }
 
     team.members.push(user);
     await teamRepo.save(team);
 
     return prettyJson(res, { message: "Miembro añadido correctamente", team });
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al añadir miembro", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al añadir miembro", error: (error as Error).message }, 500);
   }
 };
 
-/* ============================================================
-   🔹 QUITAR MIEMBRO
-============================================================ */
+/* Quitar miembro */
 export const removeMember = async (req: Request, res: Response) => {
   try {
     const { id, userId } = req.params;
@@ -198,28 +171,26 @@ export const removeMember = async (req: Request, res: Response) => {
     });
 
     if (!team) return prettyJson(res, { message: "Equipo no encontrado" }, 404);
-    if (req.user?.id !== team.owner.id)
+    if (req.user?.id !== team.owner.id) {
       return prettyJson(res, { message: "Solo el propietario puede quitar miembros" }, 403);
+    }
 
-    if (!team.members.some((m) => m.id === Number(userId)))
+    team.members = team.members ?? [];
+
+    if (!team.members.some((m) => m.id === Number(userId))) {
       return prettyJson(res, { message: "El usuario no pertenece al equipo" }, 404);
+    }
 
     team.members = team.members.filter((m) => m.id !== Number(userId));
     await teamRepo.save(team);
 
     return prettyJson(res, { message: "Miembro eliminado correctamente", team });
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al quitar miembro", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al quitar miembro", error: (error as Error).message }, 500);
   }
 };
 
-/* ============================================================
-   🔹 INVITAR USUARIO POR EMAIL
-============================================================ */
+/* Invitar usuario por email — CON LOG DE DEBUG */
 export const inviteToTeam = async (req: Request, res: Response) => {
   try {
     const teamId = Number(req.params.id);
@@ -231,18 +202,26 @@ export const inviteToTeam = async (req: Request, res: Response) => {
       where: { id: teamId },
       relations: ["owner", "members"],
     });
+
     if (!team) return prettyJson(res, { message: "Equipo no encontrado" }, 404);
 
-    if (req.user?.id !== team.owner.id)
+    team.members = team.members ?? [];
+
+    if (req.user?.id !== team.owner.id) {
       return prettyJson(res, { message: "Solo el propietario puede invitar" }, 403);
+    }
 
     const user = await userRepo.findOne({ where: { email } });
     if (!user) return prettyJson(res, { message: "Usuario no encontrado" }, 404);
 
-    if (team.members.some((m) => m.id === user.id))
+    if (team.members.some((m) => m.id === user.id)) {
       return prettyJson(res, { message: "El usuario ya pertenece al equipo" }, 400);
+    }
 
     team.members.push(user);
+
+    console.log("DEBUG INVITE → team.members FINAL:", team.members);
+
     await teamRepo.save(team);
 
     return prettyJson(res, {
@@ -250,6 +229,7 @@ export const inviteToTeam = async (req: Request, res: Response) => {
       team,
     });
   } catch (error) {
+    console.error("ERROR inviteToTeam:", error);
     return prettyJson(
       res,
       { message: "Error al invitar usuario", error: (error as Error).message },
@@ -258,9 +238,7 @@ export const inviteToTeam = async (req: Request, res: Response) => {
   }
 };
 
-/* ============================================================
-   🔹 ELIMINAR EQUIPO
-============================================================ */
+/* Eliminar equipo */
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -269,19 +247,17 @@ export const deleteTeam = async (req: Request, res: Response) => {
       where: { id: Number(id) },
       relations: ["owner"],
     });
+
     if (!team) return prettyJson(res, { message: "Equipo no encontrado" }, 404);
 
-    if (req.user?.id !== team.owner.id)
+    if (req.user?.id !== team.owner.id) {
       return prettyJson(res, { message: "Solo el propietario puede eliminar" }, 403);
+    }
 
     await teamRepo.remove(team);
 
     return prettyJson(res, { message: "Equipo eliminado correctamente" });
   } catch (error) {
-    return prettyJson(
-      res,
-      { message: "Error al eliminar equipo", error: (error as Error).message },
-      500
-    );
+    return prettyJson(res, { message: "Error al eliminar equipo", error: (error as Error).message }, 500);
   }
 };
